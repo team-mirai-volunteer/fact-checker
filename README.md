@@ -381,6 +381,7 @@ gcloud artifacts repositories list --location=asia-northeast1
 - 各ロール（権限）は「この作業をするために必要な最小限の権限」
 - 例：Cloud Build編集者 = 「Dockerイメージをビルドする権限」
 - 必要以上の権限は与えない（セキュリティの原則）
+- 必要以上の権限は与えない（セキュリティの原則）
 
 **💻 コマンドライン (参考):**
 ```bash
@@ -479,5 +480,7 @@ cat github-actions-key.json
 <!-- Phase 1 Docker Build test - ENABLE_DOCKER_BUILD=true設定後のテスト -->
 <!-- Phase 2 Terraform Apply test - ENABLE_TERRAFORM_APPLY=true設定後のテスト -->
 <!-- Full GCP test with real credentials -->
+<!-- Retry after fixing storage permissions -->
+<!-- Fixed: Cloud Build 閲覧者 → 編集者 に修正後のテスト -->
 
 

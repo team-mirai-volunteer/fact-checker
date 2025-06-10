@@ -508,6 +508,12 @@ cat github-actions-key.json
 <!-- API enabled: Cloud Build API有効化後の最終テスト -->
 <!-- Secret Manager setup: API有効化＋権限追加後のテスト -->
 
+## ✅ Remote State Backend設定完了
+Terraformの冪等性確保のため、Google Cloud StorageをRemote State Backendとして設定済み。
+- 自動的にTerraform State用のGCSバケットを作成
+- CI/CD環境での状態管理を確保
+- チーム開発での状態共有が可能
+
 ## TODO: 本番環境向け権限見直し
 - [ ] github-actions-sa から編集者ロールを削除
 - [ ] 必要最小限の個別権限（8つ）に変更

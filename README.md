@@ -294,11 +294,15 @@ gcloud projects list
 
 **🖥️ GCP Console での操作:**
 1. [APIs & Services > ライブラリ](https://console.cloud.google.com/apis/library) にアクセス
-2. 以下のAPIを検索して有効化:
-   - **Cloud Build API**: `Cloud Build API` で検索 → [有効にする]
+2. 以下のAPIを検索して有効化（**必須**）:
+   - **Cloud Build API**: `Cloud Build API` で検索 → [有効にする] ⚠️ **最重要**
    - **Cloud Run API**: `Cloud Run Admin API` で検索 → [有効にする]
    - **Artifact Registry API**: `Artifact Registry API` で検索 → [有効にする]
    - **Cloud Scheduler API**: `Cloud Scheduler API` で検索 → [有効にする]
+
+**📋 API有効化の確認方法:**
+- [APIs & Services > 有効なAPI](https://console.cloud.google.com/apis/dashboard) で一覧確認
+- 上記4つのAPIが「有効」になっていることを確認
 
 **💻 コマンドライン (参考):**
 ```bash
@@ -493,5 +497,6 @@ cat github-actions-key.json
 <!-- Added Service Usage ユーザー + Storage 管理者 権限追加後のテスト -->
 <!-- Complete permissions test: 全6つの権限設定完了後のテスト -->
 <!-- Final test: 編集者ロール追加後の最終テスト -->
+<!-- API enabled: Cloud Build API有効化後の最終テスト -->
 
 

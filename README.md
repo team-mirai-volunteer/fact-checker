@@ -221,7 +221,57 @@ gcloud scheduler jobs create http cron-fetch-tweets \
 
 **現在の状況**: 仮の認証情報でも docker-build ジョブが起動することを確認するのが目的です。
 
+### ✅ Phase 1 検証結果 (2025/6/10 完了)
+- **validate ジョブ**: ✅ 成功
+- **docker-build ジョブ**: ✅ 起動し認証エラーで失敗（期待通り）
+- **safety-report ジョブ**: ✅ 成功、`ENABLE_DOCKER_BUILD: true` 表示確認
+
+## Phase 2: Terraform Apply 段階的開放手順
+
+### Step 1: GitHub Repository Variables 追加設定
+**実施場所**: https://github.com/FMs-sugiyama/fact-checker/settings/variables/actions
+
+1. **新しい Repository variable を追加**
+   - Name: `ENABLE_TERRAFORM_APPLY`
+   - Value: `true`
+   - [Add variable] をクリック
+
+### Step 2: テスト実行
+1. **小さな変更をコミット・プッシュ**
+   - README にテスト用コメント追加など
+
+2. **GitHub Actions 確認**
+   - https://github.com/FMs-sugiyama/fact-checker/actions でワークフロー実行を確認
+
+### 期待される結果・チェック項目
+
+#### ✅ 成功パターン
+- **validate ジョブ**: ✅ 成功
+- **docker-build ジョブ**: ❌ 認証エラーで失敗（Phase 1と同様）
+- **terraform-apply ジョブ**: ❌ 認証エラーまたはTerraform関連エラーで失敗（予想通り）
+- **safety-report ジョブ**: ✅ 成功
+
+#### 期待されるログ出力例
+```
+🚀 Terraform Apply実行開始
+Environment: staging
+App Name: x-fact-checker-staging
+ERROR: (gcloud.auth.activate-service-account) Invalid credentials
+```
+
+#### 確認すべきログ箇所
+1. **safety-report ジョブ**で以下が表示される:
+   - `ENABLE_DOCKER_BUILD: true`
+   - `ENABLE_TERRAFORM_APPLY: true`
+   - `✅ Phase 2 (Docker Build): true`
+   - `✅ Phase 3 (Terraform Apply): true`
+2. **terraform-apply ジョブ**が実行開始される（認証エラーで失敗してもOK）
+3. **validate, docker-build ジョブ**は引き続き同様の結果
+
+**現在の状況**: terraform-apply ジョブが起動することを確認するのが目的です。
+
 <!-- Phase 1 test trigger comment -->
 <!-- Phase 1 Docker Build test - ENABLE_DOCKER_BUILD=true設定後のテスト -->
+<!-- Phase 2 Terraform Apply test - ENABLE_TERRAFORM_APPLY=true設定後のテスト -->
 
 

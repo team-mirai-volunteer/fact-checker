@@ -299,6 +299,7 @@ gcloud projects list
    - **Cloud Run API**: `Cloud Run Admin API` で検索 → [有効にする]
    - **Artifact Registry API**: `Artifact Registry API` で検索 → [有効にする]
    - **Cloud Scheduler API**: `Cloud Scheduler API` で検索 → [有効にする]
+   - **Secret Manager API**: `Secret Manager API` で検索 → [有効にする] ⚠️ **重要**
 
 **📋 API有効化の確認方法:**
 - [APIs & Services > 有効なAPI](https://console.cloud.google.com/apis/dashboard) で一覧確認
@@ -373,15 +374,22 @@ gcloud artifacts repositories list --location=asia-northeast1
    - **説明**: `Service account for GitHub Actions`
 5. [作成して続行] をクリック
 
-**Step 4-2: 権限の付与**
-6. 以下のロールを追加（**テスト環境用**）:
-   - `編集者` (roles/editor) - 包括的な編集権限（テスト環境推奨）
+**Step 4-2: 権限の付与（本番環境対応）**
+6. 以下のロールを追加（**最小権限**）:
+   - `Cloud Build 編集者` (roles/cloudbuild.builds.editor)
+   - `Cloud Run 管理者` (roles/run.admin)
+   - `Artifact Registry 書き込み` (roles/artifactregistry.writer)
+   - `Secret Manager 管理者` (roles/secretmanager.admin)
+   - `Service Usage ユーザー` (roles/serviceusage.serviceUsageConsumer)
+   - `Storage オブジェクト管理者` (roles/storage.objectAdmin)
+   - `サービス アカウント ユーザー` (roles/iam.serviceAccountUser)
+   - `Cloud Scheduler 管理者` (roles/cloudscheduler.admin)
 7. [続行] → [完了] をクリック
 
 **💡 権限について:**
-- **テスト環境**: `編集者`ロールで簡単かつ確実に動作
-- **本番環境**: 最小権限の原則に従い個別ロールを使用を検討
-- Cloud Buildの組織ポリシーにより、個別権限では解決しない場合がある
+- **本番環境対応**: 必要最小限の個別権限のみ付与
+- 各権限は特定の操作に必要な最小権限
+- `編集者`ロールより安全性が高い
 
 **🔧 本番環境用の個別権限（参考）:**
 ```
@@ -498,5 +506,11 @@ cat github-actions-key.json
 <!-- Complete permissions test: 全6つの権限設定完了後のテスト -->
 <!-- Final test: 編集者ロール追加後の最終テスト -->
 <!-- API enabled: Cloud Build API有効化後の最終テスト -->
+<!-- Secret Manager setup: API有効化＋権限追加後のテスト -->
+
+## TODO: 本番環境向け権限見直し
+- [ ] github-actions-sa から編集者ロールを削除
+- [ ] 必要最小限の個別権限（8つ）に変更
+- [ ] セキュリティレビュー実施
 
 

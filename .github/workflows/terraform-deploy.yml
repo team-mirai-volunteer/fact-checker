@@ -127,11 +127,6 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
       
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.0
-      
       - name: Create Terraform State Bucket
         working-directory: ./infrastructure
         env:
@@ -156,6 +151,11 @@ jobs:
           # Replace placeholder with actual project ID
           sed -i "s/REPLACE_WITH_YOUR_PROJECT_ID/$PROJECT_ID/g" versions.tf
           echo "✅ Backend configuration updated"
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
       
       - name: Terraform Init
         working-directory: ./infrastructure

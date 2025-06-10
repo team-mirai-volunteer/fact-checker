@@ -370,19 +370,25 @@ gcloud artifacts repositories list --location=asia-northeast1
 5. [作成して続行] をクリック
 
 **Step 4-2: 権限の付与**
-6. 以下のロールを追加:
-   - `Cloud Build 編集者` (roles/cloudbuild.builds.editor) - Dockerイメージをビルドするため
-   - `Cloud Run 管理者` (roles/run.admin) - Cloud Runサービスをデプロイするため
-   - `Artifact Registry 書き込み` (roles/artifactregistry.writer) - Dockerイメージを保存するため
-   - `サービス アカウント ユーザー` (roles/iam.serviceAccountUser) - 他のサービスからこのアカウントを使用するため
-   - `Service Usage ユーザー` (roles/serviceusage.serviceUsageConsumer) - GCPサービス使用のため
-   - `Storage オブジェクト管理者` (roles/storage.objectAdmin) - Cloud Buildバケットアクセスのため
+6. 以下のロールを追加（**テスト環境用**）:
+   - `編集者` (roles/editor) - 包括的な編集権限（テスト環境推奨）
 7. [続行] → [完了] をクリック
 
 **💡 権限について:**
-- 各ロール（権限）は「この作業をするために必要な最小限の権限」
-- 例：Cloud Build編集者 = 「Dockerイメージをビルドする権限」
-- 必要以上の権限は与えない（セキュリティの原則）
+- **テスト環境**: `編集者`ロールで簡単かつ確実に動作
+- **本番環境**: 最小権限の原則に従い個別ロールを使用を検討
+- Cloud Buildの組織ポリシーにより、個別権限では解決しない場合がある
+
+**🔧 本番環境用の個別権限（参考）:**
+```
+- Cloud Build 編集者 (roles/cloudbuild.builds.editor)
+- Cloud Run 管理者 (roles/run.admin)
+- Artifact Registry 書き込み (roles/artifactregistry.writer)
+- サービス アカウント ユーザー (roles/iam.serviceAccountUser)
+- Service Usage ユーザー (roles/serviceusage.serviceUsageConsumer)
+- Storage オブジェクト管理者 (roles/storage.objectAdmin)
+```
+※ 環境によっては追加の権限や組織ポリシーの調整が必要
 - 必要以上の権限は与えない（セキュリティの原則）
 
 **💻 コマンドライン (参考):**
@@ -486,5 +492,6 @@ cat github-actions-key.json
 <!-- Fixed: Cloud Build 閲覧者 → 編集者 に修正後のテスト -->
 <!-- Added Service Usage ユーザー + Storage 管理者 権限追加後のテスト -->
 <!-- Complete permissions test: 全6つの権限設定完了後のテスト -->
+<!-- Final test: 編集者ロール追加後の最終テスト -->
 
 

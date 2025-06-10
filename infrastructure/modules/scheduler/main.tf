@@ -1,5 +1,5 @@
 resource "google_service_account" "scheduler_sa" {
-  account_id   = "${var.app_name}-scheduler-sa"
+  account_id   = "${var.app_name}-cron-sa"
   display_name = "Service Account for ${var.app_name} Scheduler"
 }
 

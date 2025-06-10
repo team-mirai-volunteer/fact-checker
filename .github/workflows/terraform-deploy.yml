@@ -157,6 +157,18 @@ jobs:
         with:
           terraform_version: 1.5.0
       
+      - name: Debug Authentication
+        run: |
+          echo "=== Authentication Debug ==="
+          echo "GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-'NOT SET'}"
+          echo "GCLOUD_PROJECT: ${GCLOUD_PROJECT:-'NOT SET'}"
+          if [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ] && [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            echo "✅ Credentials file exists"
+            ls -la "$GOOGLE_APPLICATION_CREDENTIALS"
+          else
+            echo "❌ Credentials file missing"
+          fi
+      
       - name: Terraform Init
         working-directory: ./infrastructure
         run: terraform init

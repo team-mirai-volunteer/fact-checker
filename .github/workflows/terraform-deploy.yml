@@ -121,6 +121,8 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
           project_id: ${{ secrets.PROJECT_ID }}
+          create_credentials_file: true
+          export_environment_variables: true
       
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2

@@ -127,26 +127,42 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
       
+      - name: Create Terraform State Bucket
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+        run: |
+          # Create bucket for Terraform state if it doesn't exist
+          BUCKET_NAME="${PROJECT_ID}-terraform-state"
+          if ! gsutil ls -b gs://$BUCKET_NAME 2>/dev/null; then
+            echo "🪣 Creating Terraform state bucket: $BUCKET_NAME"
+            gsutil mb gs://$BUCKET_NAME
+            gsutil versioning set on gs://$BUCKET_NAME
+            echo "✅ Terraform state bucket created and versioning enabled"
+          else
+            echo "✅ Terraform state bucket already exists: $BUCKET_NAME"
+          fi
+      
+      - name: Update Backend Configuration
+        working-directory: ./infrastructure
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+        run: |
+          # Replace placeholder with actual project ID
+          sed -i "s/REPLACE_WITH_YOUR_PROJECT_ID/$PROJECT_ID/g" versions.tf
+          echo "✅ Backend configuration updated for project: $PROJECT_ID"
+          cat versions.tf | grep -A3 backend
+      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
       
-      - name: Debug Authentication
-        run: |
-          echo "=== Authentication Debug ==="
-          echo "GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-'NOT SET'}"
-          echo "GCLOUD_PROJECT: ${GCLOUD_PROJECT:-'NOT SET'}"
-          if [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ] && [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-            echo "✅ Credentials file exists"
-            ls -la "$GOOGLE_APPLICATION_CREDENTIALS"
-          else
-            echo "❌ Credentials file missing"
-          fi
-      
-      - name: Terraform Init
+      - name: Terraform Init (with Remote State Backend)
         working-directory: ./infrastructure
-        run: terraform init
+        run: |
+          echo "🚀 Initializing Terraform with Remote State Backend..."
+          terraform init
+          echo "✅ Terraform initialization completed"
       
       - name: Terraform Apply
         working-directory: ./infrastructure

@@ -384,6 +384,7 @@ gcloud artifacts repositories list --location=asia-northeast1
    - `Storage オブジェクト管理者` (roles/storage.objectAdmin)
    - `サービス アカウント ユーザー` (roles/iam.serviceAccountUser)
    - `Cloud Scheduler 管理者` (roles/cloudscheduler.admin)
+   - `IAM Security 管理者` (roles/iam.securityAdmin) - Secret Manager IAM設定のため ⚠️ **追加**
 7. [続行] → [完了] をクリック
 
 **💡 権限について:**
@@ -507,6 +508,7 @@ cat github-actions-key.json
 <!-- Final test: 編集者ロール追加後の最終テスト -->
 <!-- API enabled: Cloud Build API有効化後の最終テスト -->
 <!-- Secret Manager setup: API有効化＋権限追加後のテスト -->
+<!-- Security Admin: セキュリティ管理者権限追加後のテスト -->
 
 ## ✅ Remote State Backend設定完了
 Terraformの冪等性確保のため、Google Cloud StorageをRemote State Backendとして設定済み。
@@ -514,9 +516,24 @@ Terraformの冪等性確保のため、Google Cloud StorageをRemote State Backe
 - CI/CD環境での状態管理を確保
 - チーム開発での状態共有が可能
 
+## 🔧 Secret Manager権限不足エラーの解決
+
+**現在のエラー**: `Permission 'secretmanager.secrets.setIamPolicy' denied`
+
+**適切な権限追加**:
+1. [IAM と管理 > サービス アカウント](https://console.cloud.google.com/iam-admin/serviceaccounts) にアクセス
+2. `github-actions-sa` をクリック
+3. **セキュリティ管理者** (roles/iam.securityAdmin) ロールを追加 ✅ **設定完了**
+
+**このロールの権限範囲**:
+- IAMポリシーの設定・変更
+- Secret Manager IAM設定
+- 最小権限の原則に適合
+
 ## TODO: 本番環境向け権限見直し
 - [ ] github-actions-sa から編集者ロールを削除
 - [ ] 必要最小限の個別権限（8つ）に変更
 - [ ] セキュリティレビュー実施
+- [ ] オーナー権限を削除（テスト完了後）
 
 

@@ -127,40 +127,45 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
       
-      - name: Create Terraform State Bucket
+      - name: Clean Existing Resources (avoid conflicts)
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
         run: |
-          # Create bucket for Terraform state if it doesn't exist
-          BUCKET_NAME="${PROJECT_ID}-terraform-state"
-          if ! gsutil ls -b gs://$BUCKET_NAME 2>/dev/null; then
-            echo "🪣 Creating Terraform state bucket: $BUCKET_NAME"
-            gsutil mb gs://$BUCKET_NAME
-            gsutil versioning set on gs://$BUCKET_NAME
-            echo "✅ Terraform state bucket created and versioning enabled"
-          else
-            echo "✅ Terraform state bucket already exists: $BUCKET_NAME"
+          echo "🧹 Cleaning existing resources to avoid conflicts..."
+          
+          # Delete existing service accounts if they exist
+          echo "Checking service accounts..."
+          if gcloud iam service-accounts describe x-fact-checker-staging-sa@${PROJECT_ID}.iam.gserviceaccount.com >/dev/null 2>&1; then
+            echo "Deleting existing service account: x-fact-checker-staging-sa"
+            gcloud iam service-accounts delete x-fact-checker-staging-sa@${PROJECT_ID}.iam.gserviceaccount.com --quiet || true
           fi
-      
-      - name: Update Backend Configuration
-        working-directory: ./infrastructure
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-        run: |
-          # Replace placeholder with actual project ID
-          sed -i "s/REPLACE_WITH_YOUR_PROJECT_ID/$PROJECT_ID/g" versions.tf
-          echo "✅ Backend configuration updated for project: $PROJECT_ID"
-          cat versions.tf | grep -A3 backend
+          
+          if gcloud iam service-accounts describe x-fact-checker-staging-cron-sa@${PROJECT_ID}.iam.gserviceaccount.com >/dev/null 2>&1; then
+            echo "Deleting existing service account: x-fact-checker-staging-cron-sa"
+            gcloud iam service-accounts delete x-fact-checker-staging-cron-sa@${PROJECT_ID}.iam.gserviceaccount.com --quiet || true
+          fi
+          
+          # Delete existing secrets if they exist
+          echo "Checking secrets..."
+          SECRET_NAMES=("x-access-secret" "x-bearer-token" "x-app-secret" "cron-secret" "slack-signing-secret" "x-access-token" "vector-store-id" "openai-api-key" "slack-channel-id" "slack-bot-token" "x-app-key")
+          for secret in "${SECRET_NAMES[@]}"; do
+            if gcloud secrets describe staging-${secret} >/dev/null 2>&1; then
+              echo "Deleting existing secret: staging-${secret}"
+              gcloud secrets delete staging-${secret} --quiet || true
+            fi
+          done
+          
+          echo "✅ Resource cleanup completed"
       
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
       
-      - name: Terraform Init (with Remote State Backend)
+      - name: Terraform Init (Local State)
         working-directory: ./infrastructure
         run: |
-          echo "🚀 Initializing Terraform with Remote State Backend..."
+          echo "🚀 Initializing Terraform with Local State..."
           terraform init
           echo "✅ Terraform initialization completed"
       

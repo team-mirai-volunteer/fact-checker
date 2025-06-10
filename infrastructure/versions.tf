@@ -1,11 +1,8 @@
 terraform {
   required_version = ">= 1.5.0"
   
-  # Remote State Backend for CI/CD idempotency
-  backend "gcs" {
-    bucket = "REPLACE_WITH_YOUR_PROJECT_ID-terraform-state"
-    prefix = "fact-checker/state"
-  }
+  # Local State Backend (temporary solution)
+  # TODO: Implement Remote State Backend after resolving authentication issues
   
   required_providers {
     google = {

@@ -270,8 +270,214 @@ ERROR: (gcloud.auth.activate-service-account) Invalid credentials
 
 **現在の状況**: terraform-apply ジョブが起動することを確認するのが目的です。
 
+## Option 2: 実際のGCP認証情報でのフルテスト
+
+### 事前準備: 必要なGCPリソースの作成
+
+#### 1. GCPプロジェクトの確認
+
+**🖥️ GCP Console での操作:**
+1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
+2. 画面上部のプロジェクト選択ドロップダウンで現在のプロジェクトを確認
+3. プロジェクトIDをメモしておく
+
+**💻 コマンドライン (参考):**
+```bash
+# 現在のプロジェクトIDを確認
+gcloud config get-value project
+
+# または、プロジェクト一覧を表示
+gcloud projects list
+```
+
+#### 2. 必要なAPIの有効化
+
+**🖥️ GCP Console での操作:**
+1. [APIs & Services > ライブラリ](https://console.cloud.google.com/apis/library) にアクセス
+2. 以下のAPIを検索して有効化:
+   - **Cloud Build API**: `Cloud Build API` で検索 → [有効にする]
+   - **Cloud Run API**: `Cloud Run Admin API` で検索 → [有効にする]
+   - **Artifact Registry API**: `Artifact Registry API` で検索 → [有効にする]
+   - **Cloud Scheduler API**: `Cloud Scheduler API` で検索 → [有効にする]
+
+**💻 コマンドライン (参考):**
+```bash
+# 必要なAPIを有効化
+gcloud services enable cloudbuild.googleapis.com
+gcloud services enable run.googleapis.com
+gcloud services enable artifactregistry.googleapis.com
+gcloud services enable cloudscheduler.googleapis.com
+```
+
+#### 3. Artifact Registryリポジトリの作成
+
+**🖥️ GCP Console での操作:**
+1. [Artifact Registry](https://console.cloud.google.com/artifacts) にアクセス
+2. [リポジトリを作成] をクリック
+3. 以下を設定:
+   - **名前**: `fact-checker-repo`
+   - **形式**: `Docker`
+   - **モード**: `標準`
+   - **ロケーション**: `asia-northeast1`
+   - **説明**: `Docker repository for fact-checker app`
+4. [作成] をクリック
+
+**💻 コマンドライン (参考):**
+```bash
+# リポジトリ作成
+gcloud artifacts repositories create fact-checker-repo \
+  --repository-format=docker \
+  --location=asia-northeast1 \
+  --description="Docker repository for fact-checker app"
+
+# 作成確認
+gcloud artifacts repositories list --location=asia-northeast1
+```
+
+#### 4. サービスアカウントの作成と権限設定
+
+**📖 サービスアカウントとは？**
+サービスアカウントは、**アプリケーションやサービス専用のGoogleアカウント**です。
+
+- **人間のアカウント** vs **サービスアカウント**:
+  - 人間: あなたの gmail.com アカウントでGCPにログイン
+  - サービス: GitHub ActionsがGCPのリソースにアクセスするための専用アカウント
+
+- **なぜ必要？**
+  - GitHub ActionsからGCPのサービス（Cloud Build、Cloud Runなど）を使用するため
+  - あなたの個人アカウントを直接使わず、必要最小限の権限だけを持つ専用アカウントを作成
+  - セキュリティ上の理由：万が一キーが漏洩しても、限定された操作しかできない
+
+- **イメージ**:
+  ```
+  GitHub Actions → サービスアカウント → GCPリソース
+                   (github-actions-sa)   (Cloud Build, Cloud Runなど)
+  ```
+
+**🖥️ GCP Console での操作:**
+
+**Step 4-1: サービスアカウント作成**
+1. [IAM と管理 > サービス アカウント](https://console.cloud.google.com/iam-admin/serviceaccounts) にアクセス
+2. **「このページを表示するには、プロジェクトを選択してください。」**と表示される場合:
+   - 画面上部のプロジェクト選択ドロップダウンをクリック
+   - あなたのGCPプロジェクトを選択（手順1で確認したプロジェクトID）
+   - プロジェクトが選択されるとサービスアカウント一覧画面が表示される
+3. [サービス アカウントを作成] をクリック
+4. **サービス アカウントの詳細**を設定:
+   - **サービス アカウント名**: `github-actions-sa`
+   - **サービス アカウント ID**: `github-actions-sa` (自動入力)
+   - **説明**: `Service account for GitHub Actions`
+5. [作成して続行] をクリック
+
+**Step 4-2: 権限の付与**
+6. 以下のロールを追加:
+   - `Cloud Build 編集者` (roles/cloudbuild.builds.editor) - Dockerイメージをビルドするため
+   - `Cloud Run 管理者` (roles/run.admin) - Cloud Runサービスをデプロイするため
+   - `Artifact Registry 書き込み` (roles/artifactregistry.writer) - Dockerイメージを保存するため
+   - `サービス アカウント ユーザー` (roles/iam.serviceAccountUser) - 他のサービスからこのアカウントを使用するため
+7. [続行] → [完了] をクリック
+
+**💡 権限について:**
+- 各ロール（権限）は「この作業をするために必要な最小限の権限」
+- 例：Cloud Build編集者 = 「Dockerイメージをビルドする権限」
+- 必要以上の権限は与えない（セキュリティの原則）
+
+**💻 コマンドライン (参考):**
+```bash
+# サービスアカウント作成
+gcloud iam service-accounts create github-actions-sa \
+  --description="Service account for GitHub Actions" \
+  --display-name="GitHub Actions SA"
+
+# 必要な権限を付与
+PROJECT_ID=$(gcloud config get-value project)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/cloudbuild.builds.editor"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+```
+
+#### 5. サービスアカウントキーの作成とダウンロード
+
+**📖 サービスアカウントキーとは？**
+- サービスアカウントの「パスワード」のようなもの
+- JSON形式のファイルで、このキーがあればそのサービスアカウントとしてGCPにアクセス可能
+- **非常に重要な機密情報**：このファイルを持つ人は、そのサービスアカウントの権限でGCPを操作できる
+
+**🖥️ GCP Console での操作:**
+1. [IAM と管理 > サービス アカウント](https://console.cloud.google.com/iam-admin/serviceaccounts) にアクセス
+2. 作成した `github-actions-sa` をクリック
+3. [キー] タブをクリック
+4. [鍵を追加] → [新しい鍵を作成] をクリック
+5. **キーのタイプ**: `JSON` を選択
+6. [作成] をクリック
+7. JSONファイルが自動でダウンロードされる（ファイル名は `プロジェクト名-xxxxx.json` のような形式）
+8. ダウンロードしたファイルをテキストエディタで開き、**全内容**をコピー
+
+**💻 コマンドライン (参考):**
+```bash
+# キーファイル作成
+gcloud iam service-accounts keys create github-actions-key.json \
+  --iam-account=github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com
+
+# 作成されたファイルの内容を確認
+cat github-actions-key.json
+```
+
+### GitHub Secrets 更新手順
+
+#### 1. GCLOUD_SERVICE_KEY の更新
+**実施場所**: https://github.com/FMs-sugiyama/fact-checker/settings/secrets/actions
+
+1. **既存のGCLOUD_SERVICE_KEYを削除**
+   - 既存のダミー値を削除
+
+2. **新しいGCLOUD_SERVICE_KEYを追加**
+   - Name: `GCLOUD_SERVICE_KEY`
+   - Value: `github-actions-key.json` ファイルの**全内容**をコピー&ペースト
+   - [Update secret] をクリック
+
+#### 2. PROJECT_ID の更新
+1. **既存のPROJECT_IDを削除**
+   - 既存のダミー値を削除
+
+2. **新しいPROJECT_IDを追加**
+   - Name: `PROJECT_ID`
+   - Value: あなたの実際のGCPプロジェクトID
+   - 確認方法: `gcloud config get-value project`
+   - [Update secret] をクリック
+
+### セキュリティ注意事項
+⚠️ **重要**: 
+- `github-actions-key.json` ファイルは機密情報です
+- GitHub Secretsに設定後、ローカルファイルは削除してください:
+  ```bash
+  rm github-actions-key.json
+  ```
+
+### テスト実行
+設定完了後、小さな変更をcommit/pushして、全ジョブが正常に動作することを確認します。
+
+**期待される結果:**
+- `validate`: ✅ 成功
+- `docker-build`: ✅ 成功（イメージがビルドされる）
+- `terraform-apply`: ✅ 成功または部分的成功（Terraformリソースが作成される）
+- `safety-report`: ✅ 成功
+
 <!-- Phase 1 test trigger comment -->
 <!-- Phase 1 Docker Build test - ENABLE_DOCKER_BUILD=true設定後のテスト -->
 <!-- Phase 2 Terraform Apply test - ENABLE_TERRAFORM_APPLY=true設定後のテスト -->
+<!-- Full GCP test with real credentials -->
 
 

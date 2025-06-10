@@ -122,6 +122,9 @@ jobs:
           credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
           project_id: ${{ secrets.PROJECT_ID }}
       
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:

@@ -509,6 +509,7 @@ cat github-actions-key.json
 <!-- API enabled: Cloud Build API有効化後の最終テスト -->
 <!-- Secret Manager setup: API有効化＋権限追加後のテスト -->
 <!-- Security Admin: セキュリティ管理者権限追加後のテスト -->
+<!-- Local State Backend: Resource cleanup fallback solution test -->
 
 ## ✅ Remote State Backend設定完了
 Terraformの冪等性確保のため、Google Cloud StorageをRemote State Backendとして設定済み。

@@ -127,31 +127,6 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
       
-      - name: Create Terraform State Bucket
-        working-directory: ./infrastructure
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-        run: |
-          # Create bucket for Terraform state if it doesn't exist
-          BUCKET_NAME="${PROJECT_ID}-terraform-state"
-          if ! gsutil ls -b gs://$BUCKET_NAME 2>/dev/null; then
-            echo "Creating Terraform state bucket: $BUCKET_NAME"
-            gsutil mb gs://$BUCKET_NAME
-            gsutil versioning set on gs://$BUCKET_NAME
-            echo "✅ Terraform state bucket created"
-          else
-            echo "✅ Terraform state bucket already exists"
-          fi
-      
-      - name: Update Backend Configuration
-        working-directory: ./infrastructure
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-        run: |
-          # Replace placeholder with actual project ID
-          sed -i "s/REPLACE_WITH_YOUR_PROJECT_ID/$PROJECT_ID/g" versions.tf
-          echo "✅ Backend configuration updated"
-      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:

@@ -147,7 +147,7 @@ jobs:
           
           # Delete existing secrets if they exist
           echo "Checking secrets..."
-          SECRET_NAMES=("x-access-secret" "x-bearer-token" "x-app-secret" "cron-secret" "slack-signing-secret" "x-access-token" "vector-store-id" "openai-api-key" "slack-channel-id" "slack-bot-token" "x-app-key")
+          SECRET_NAMES=("openai-api-key" "vector-store-id" "slack-bot-token" "slack-signing-secret" "slack-channel-id" "x-app-key" "x-app-secret" "x-access-token" "x-access-secret" "x-bearer-token" "cron-secret")
           for secret in "${SECRET_NAMES[@]}"; do
             if gcloud secrets describe staging-${secret} >/dev/null 2>&1; then
               echo "Deleting existing secret: staging-${secret}"

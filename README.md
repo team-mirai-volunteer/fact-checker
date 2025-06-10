@@ -375,6 +375,8 @@ gcloud artifacts repositories list --location=asia-northeast1
    - `Cloud Run 管理者` (roles/run.admin) - Cloud Runサービスをデプロイするため
    - `Artifact Registry 書き込み` (roles/artifactregistry.writer) - Dockerイメージを保存するため
    - `サービス アカウント ユーザー` (roles/iam.serviceAccountUser) - 他のサービスからこのアカウントを使用するため
+   - `Service Usage ユーザー` (roles/serviceusage.serviceUsageConsumer) - GCPサービス使用のため
+   - `Storage オブジェクト管理者` (roles/storage.objectAdmin) - Cloud Buildバケットアクセスのため
 7. [続行] → [完了] をクリック
 
 **💡 権限について:**
@@ -482,5 +484,7 @@ cat github-actions-key.json
 <!-- Full GCP test with real credentials -->
 <!-- Retry after fixing storage permissions -->
 <!-- Fixed: Cloud Build 閲覧者 → 編集者 に修正後のテスト -->
+<!-- Added Service Usage ユーザー + Storage 管理者 権限追加後のテスト -->
+<!-- Complete permissions test: 全6つの権限設定完了後のテスト -->
 
 

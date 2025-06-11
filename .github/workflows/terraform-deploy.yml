@@ -196,6 +196,21 @@ jobs:
           
           terraform apply -auto-approve
           echo "✅ Terraform Apply成功"
+          
+          echo ""
+          echo "📝 Secret Managerにプレースホルダー値を設定中..."
+          
+          # Set placeholder values for secrets
+          SECRET_NAMES=("openai-api-key" "vector-store-id" "slack-bot-token" "slack-signing-secret" "slack-channel-id" "x-app-key" "x-app-secret" "x-access-token" "x-access-secret" "x-bearer-token" "cron-secret")
+          for secret in "${SECRET_NAMES[@]}"; do
+            echo "Setting placeholder value for staging-${secret}"
+            echo "PLACEHOLDER_VALUE_${secret^^}" | gcloud secrets versions add staging-${secret} --data-file=- || true
+          done
+          
+          echo "✅ プレースホルダー値設定完了"
+          echo ""
+          echo "⚠️  重要: 後で実際の値に更新してください"
+          echo "https://console.cloud.google.com/security/secret-manager?project=${{ secrets.PROJECT_ID }}"
       
       - name: Get Service URL
         working-directory: ./infrastructure

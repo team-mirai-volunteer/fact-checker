@@ -183,22 +183,22 @@ jobs:
           terraform init
           echo "✅ Terraform initialization completed"
       
-      - name: Terraform Apply
+      - name: Create Secrets Only (First Step)
         working-directory: ./infrastructure
         env:
           TF_VAR_gcp_project_id: ${{ secrets.PROJECT_ID }}
           TF_VAR_branch_name: ${{ needs.validate.outputs.branch_name }}
           TF_VAR_region: ${{ env.REGION }}
         run: |
-          echo "🚀 Terraform Apply実行開始"
-          echo "Environment: ${{ needs.validate.outputs.environment }}"
-          echo "App Name: ${{ needs.validate.outputs.app_name }}"
-          
-          terraform apply -auto-approve
-          echo "✅ Terraform Apply成功"
-          
-          echo ""
-          echo "📝 Secret Managerにプレースホルダー値を設定中..."
+          echo "🚀 Step 1: Creating Secret Manager secrets only..."
+          terraform apply -auto-approve -target=module.secrets
+          echo "✅ Secret Manager secrets created"
+      
+      - name: Set Secret Values
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+        run: |
+          echo "📝 Setting placeholder values for secrets..."
           
           # Set placeholder values for secrets
           SECRET_NAMES=("openai-api-key" "vector-store-id" "slack-bot-token" "slack-signing-secret" "slack-channel-id" "x-app-key" "x-app-secret" "x-access-token" "x-access-secret" "x-bearer-token" "cron-secret")
@@ -208,6 +208,20 @@ jobs:
           done
           
           echo "✅ プレースホルダー値設定完了"
+          
+      - name: Terraform Apply (Complete Infrastructure)
+        working-directory: ./infrastructure
+        env:
+          TF_VAR_gcp_project_id: ${{ secrets.PROJECT_ID }}
+          TF_VAR_branch_name: ${{ needs.validate.outputs.branch_name }}
+          TF_VAR_region: ${{ env.REGION }}
+        run: |
+          echo "🚀 Step 2: Deploying complete infrastructure..."
+          echo "Environment: ${{ needs.validate.outputs.environment }}"
+          echo "App Name: ${{ needs.validate.outputs.app_name }}"
+          
+          terraform apply -auto-approve
+          echo "✅ Complete infrastructure deployment success"
           echo ""
           echo "⚠️  重要: 後で実際の値に更新してください"
           echo "https://console.cloud.google.com/security/secret-manager?project=${{ secrets.PROJECT_ID }}"

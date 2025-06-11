@@ -8,6 +8,13 @@ resource "google_secret_manager_secret" "secrets" {
   }
 }
 
+resource "google_secret_manager_secret_version" "secret_versions" {
+  for_each = var.secrets
+  
+  secret      = google_secret_manager_secret.secrets[each.key].id
+  secret_data = "PLACEHOLDER_VALUE_${upper(replace(each.key, "-", "_"))}"
+}
+
 resource "google_secret_manager_secret_iam_member" "secret_accessor" {
   for_each = var.secrets
   

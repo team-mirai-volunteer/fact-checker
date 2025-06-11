@@ -25,11 +25,6 @@ resource "google_cloud_run_v2_service" "fact_checker" {
         }
       }
       
-      env {
-        name  = "PORT"
-        value = "8080"
-      }
-      
       dynamic "env" {
         for_each = var.secret_env_vars
         content {

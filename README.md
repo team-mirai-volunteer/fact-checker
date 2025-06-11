@@ -537,4 +537,9 @@ Terraformの冪等性確保のため、Google Cloud StorageをRemote State Backe
 - [ ] セキュリティレビュー実施
 - [ ] オーナー権限を削除（テスト完了後）
 
+## Cloud Run Configuration Updates
+- Added ENV environment variable support for fact-checker provider selection
+- Configured automatic ENV setting based on branch (prod/dev)
+- Fixed startup probe failures caused by missing environment configuration
+
 

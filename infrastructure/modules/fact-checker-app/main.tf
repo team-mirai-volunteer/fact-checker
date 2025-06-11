@@ -26,6 +26,14 @@ resource "google_cloud_run_v2_service" "fact_checker" {
       }
       
       dynamic "env" {
+        for_each = var.env_vars
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+      
+      dynamic "env" {
         for_each = var.secret_env_vars
         content {
           name = env.key

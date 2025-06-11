@@ -56,6 +56,9 @@ module "fact_checker_app" {
   max_instances    = local.current_config.max_instances
   cpu_limit        = local.current_config.cpu_limit
   memory_limit     = local.current_config.memory_limit
+  env_vars = {
+    ENV = local.environment == "production" ? "prod" : "dev"
+  }
   secret_env_vars  = {
     OPENAI_API_KEY      = module.secrets.secret_versions["openai-api-key"]
     VECTOR_STORE_ID     = module.secrets.secret_versions["vector-store-id"]

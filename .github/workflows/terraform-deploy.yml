@@ -140,6 +140,13 @@ jobs:
         run: |
           echo "🧹 Cleaning existing resources to avoid conflicts..."
           
+          # Delete existing Cloud Run services if they exist
+          echo "Checking Cloud Run services..."
+          if gcloud run services describe x-fact-checker-staging --region=asia-northeast1 >/dev/null 2>&1; then
+            echo "Deleting existing Cloud Run service: x-fact-checker-staging"
+            gcloud run services delete x-fact-checker-staging --region=asia-northeast1 --quiet || true
+          fi
+          
           # Delete existing service accounts if they exist
           echo "Checking service accounts..."
           if gcloud iam service-accounts describe x-fact-checker-staging-sa@${PROJECT_ID}.iam.gserviceaccount.com >/dev/null 2>&1; then

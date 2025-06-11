@@ -103,9 +103,16 @@ jobs:
           APP_NAME: ${{ needs.validate.outputs.app_name }}
         run: |
           echo "🐳 Dockerイメージビルド開始"
-          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:${{ github.sha }}"
-          gcloud builds submit --tag "$IMAGE" --quiet
-          echo "✅ Dockerイメージビルド成功: $IMAGE"
+          IMAGE_SHA="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:${{ github.sha }}"
+          IMAGE_LATEST="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:latest"
+          
+          # Build and push with SHA tag
+          gcloud builds submit --tag "$IMAGE_SHA" --quiet
+          echo "✅ Dockerイメージビルド成功: $IMAGE_SHA"
+          
+          # Tag and push as latest
+          gcloud container images add-tag "$IMAGE_SHA" "$IMAGE_LATEST" --quiet
+          echo "✅ latest タグ作成完了: $IMAGE_LATEST"
 
   terraform-apply:
     needs: [validate, docker-build]

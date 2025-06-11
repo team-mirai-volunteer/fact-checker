@@ -4,33 +4,57 @@ import { createFactChecker } from "../fact_checker";
 
 const factChecker = createFactChecker();
 
-export const slack = new WebClient(
-  process.env.SLACK_BOT_TOKEN ??
-    (() => {
-      throw new Error("SLACK_BOT_TOKEN is not set");
-    })(),
-);
+// 遅延初期化: 初回アクセス時にSlackクライアントを作成
+let _slackClient: WebClient | null = null;
+let _slackApp: App | null = null;
 
-export const slackApp = new App({
-  token: process.env.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
-});
+export const slack = {
+  get chat() {
+    if (!_slackClient) {
+      console.log("Initializing Slack client...");
+      const token = process.env.SLACK_BOT_TOKEN;
+      if (!token) throw new Error("SLACK_BOT_TOKEN is not set");
+      _slackClient = new WebClient(token);
+    }
+    return _slackClient.chat;
+  }
+};
 
-// ---------------- app_mention ハンドラ ----------------
-slackApp.event("app_mention", async ({ event, client }) => {
-  // `<@U12345678> ここが実際の本文…` となっているのでメンション部分を除去
-  const rawText = event.text?.replace(/<@[^>]+>\s*/, "").trim() ?? "";
-  if (!rawText) return;
+function initializeSlackApp() {
+  if (_slackApp) return _slackApp;
+  
+  console.log("Initializing Slack app...");
+  const token = process.env.SLACK_BOT_TOKEN;
+  const signingSecret = process.env.SLACK_SIGNING_SECRET;
+  if (!token) throw new Error("SLACK_BOT_TOKEN is not set");
+  if (!signingSecret) throw new Error("SLACK_SIGNING_SECRET is not set");
+  
+  _slackApp = new App({ token, signingSecret });
+  
+  // event handlerを設定
+  _slackApp.event("app_mention", async ({ event, client }) => {
+    const rawText = event.text?.replace(/<@[^>]+>\s*/, "").trim() ?? "";
+    if (!rawText) return;
 
-  // ファクトチェック
-  const check = await factChecker.factCheck(rawText);
-  const label = check.ok ? "✅ OK" : "❌ NG";
+    const check = await factChecker.factCheck(rawText);
+    const label = check.ok ? "✅ OK" : "❌ NG";
 
-  // スレッド (thread_ts) があればそこへ、無ければ新規メッセージ
-  await client.chat.postMessage({
-    channel: event.channel,
-    thread_ts: event.thread_ts ?? event.ts,
-    text: `${label} ${check.answer}`,
+    await client.chat.postMessage({
+      channel: event.channel,
+      thread_ts: event.thread_ts ?? event.ts,
+      text: `${label} ${check.answer}`,
+    });
   });
-});
-// ------------------------------------------------------
+  
+  return _slackApp;
+}
+
+export const slackApp = {
+  get processEvent() {
+    return initializeSlackApp().processEvent.bind(initializeSlackApp());
+  },
+  action: (actionId: string, handler: any) => {
+    initializeSlackApp().action(actionId, handler);
+  }
+};
+

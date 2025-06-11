@@ -648,4 +648,9 @@ gcloud secrets versions list staging-openai-api-key
 - Configured automatic ENV setting based on branch (prod/dev)
 - Fixed startup probe failures caused by missing environment configuration
 
+## 🚨 Current Issue: Lazy Initialization
+**Problem**: TwitterとSlackクライアントがmodule import時に初期化され、環境変数が必要
+**Status**: 遅延初期化を実装中だが、events.tsとactions.tsのimport時実行が問題
+**Workaround**: 一時的にevents.tsとactions.tsをコメントアウトしてstartup probe成功を確認中
+
 

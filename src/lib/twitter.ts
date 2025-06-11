@@ -27,4 +27,15 @@ function createTwitterClient() {
   return new TwitterApi(getEnv("X_BEARER_TOKEN"));
 }
 
-export const twitter = createTwitterClient();
+// 遅延初期化: 初回アクセス時にTwitterクライアントを作成
+let _twitterClient: TwitterApi | null = null;
+
+export const twitter = {
+  get v2() {
+    if (!_twitterClient) {
+      console.log("Initializing Twitter client...");
+      _twitterClient = createTwitterClient();
+    }
+    return _twitterClient.v2;
+  }
+};

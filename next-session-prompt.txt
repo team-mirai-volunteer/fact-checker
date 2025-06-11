@@ -1,0 +1,52 @@
+## 🔄 次回セッション再開用プロンプト
+
+前回のセッションでTerraform infrastructure deploymentの設定が完了しました。
+現在、GitHub Actionsでインフラのデプロイは成功していますが、
+Cloud Runでアプリケーションの起動に失敗している状況です。
+
+以下のエラーでCloud Runサービスが起動しません：
+「The user-provided container failed the configured startup probe checks」
+
+現在の状況：
+✅ GitHub Actions workflow - 完成
+✅ Terraform infrastructure - 完成  
+✅ Docker build - 成功
+✅ Secret Manager - 設定完成
+❌ Cloud Run application startup - 失敗
+
+Cloud Runのログを確認して、アプリケーション起動問題を解決したいです。
+ログURL: https://console.cloud.google.com/logs/viewer?project=***&resource=cloud_run_revision
+
+アプリケーションはHonoフレームワークを使用したNode.js/TypeScriptアプリで、
+ポート8080でLISTENする予定です。
+
+問題の調査と修正をお願いします。
+
+## 📝 現在のブランチ情報
+- ブランチ: `devin/1733825673-consolidated-terraform-infrastructure`
+- 最新コミット: `a212c95 - fix: Set secret values before Cloud Run deployment`
+- プロジェクト: `/Users/sugiyama/fact-checker-local`
+
+## 🔧 完了した作業内容
+
+### GitHub Actions Workflow
+- terraform-deploy.yml の段階的検証システム完成
+- 安全弁システム (ENABLE_DOCKER_BUILD, ENABLE_TERRAFORM_APPLY) 実装
+- Docker Build → Secret設定 → Terraform Apply の順序で実行
+- リソース競合を避けるクリーンアップ処理実装
+
+### Terraform Infrastructure  
+- Local State Backend使用 (Remote State Backendは認証問題で保留)
+- Secret Manager, Cloud Run, Cloud Scheduler の設定完成
+- サービスアカウント権限設定完成
+- Secret値は3段階で設定: Secret作成 → 値設定 → Cloud Run作成
+
+### 解決した問題
+- policy submodule エラー修正
+- Secret Manager naming (hyphen format)
+- Cloud Run v2 PORT環境変数削除
+- Docker image latest tag作成
+- Secret Manager Version権限問題回避
+- リソース競合 (409エラー) 解決
+
+次回はCloud Runアプリケーション起動の問題解決に集中してください。

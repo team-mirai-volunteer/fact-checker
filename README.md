@@ -536,6 +536,112 @@ Terraformの冪等性確保のため、Google Cloud StorageをRemote State Backe
 - [ ] 必要最小限の個別権限（8つ）に変更
 - [ ] セキュリティレビュー実施
 - [ ] オーナー権限を削除（テスト完了後）
+- [ ] **Secret Manager 値設定** (Cloud Run起動に必須)
+
+## 🔐 Secret Manager 値設定手順
+
+**現在の状況**: Terraformで Secret Manager の枠組みは作成済み、値は未設定
+
+### gcloud CLI 初期設定 (コマンドライン使用前に必須)
+
+**📦 gcloud CLI インストール:**
+```bash
+# macOS (Homebrew使用)
+brew install --cask google-cloud-sdk
+
+# または公式インストーラー
+curl https://sdk.cloud.google.com | bash
+```
+
+**🔐 認証とプロジェクト設定:**
+```bash
+# 1. Google アカウントでログイン (ブラウザが開きます)
+gcloud auth login
+
+# 2. プロジェクトIDを設定 (あなたのGCPプロジェクトIDに置換)
+gcloud config set project YOUR_PROJECT_ID
+
+# 3. デフォルトリージョンを設定
+gcloud config set compute/region asia-northeast1
+gcloud config set compute/zone asia-northeast1-a
+
+# 4. 設定確認
+gcloud config list
+```
+
+**📋 設定確認コマンド (各コマンドを個別に実行):**
+```bash
+# 設定一覧表示
+gcloud config list
+
+# プロジェクトID確認
+gcloud config get-value project
+
+# 認証状況確認  
+gcloud auth list
+
+# アカウント情報確認
+gcloud info
+```
+
+### Secret値設定方法
+
+**🖥️ GCP Console での操作:**
+1. [Secret Manager](https://console.cloud.google.com/security/secret-manager) にアクセス
+2. 設定したいSecretをクリック（例: `staging-openai-api-key`）
+3. [新しいバージョン] をクリック
+4. **シークレットの値**にダミー値を入力（例: `dummy-openai-key`）
+5. [バージョンを作成] をクリック
+6. 他のSecretについても同様に設定
+
+**必要なSecret一覧 (staging環境):**
+- `staging-openai-api-key` → `dummy-openai-key`
+- `staging-vector-store-id` → `dummy-vector-store`
+- `staging-slack-bot-token` → `dummy-slack-token`
+- `staging-slack-signing-secret` → `dummy-slack-secret`
+- `staging-slack-channel-id` → `dummy-channel-id`
+- `staging-x-app-key` → `dummy-x-key`
+- `staging-x-app-secret` → `dummy-x-secret`
+- `staging-x-access-token` → `dummy-x-token`
+- `staging-x-access-secret` → `dummy-x-access`
+- `staging-x-bearer-token` → `dummy-x-bearer`
+- `staging-cron-secret` → `dummy-cron-secret`
+
+**💻 Secret値設定コマンド (staging環境の例):**
+```bash
+# OpenAI設定 (ダミー値でも起動可能)
+echo "dummy-openai-key" | gcloud secrets versions add staging-openai-api-key --data-file=-
+echo "dummy-vector-store" | gcloud secrets versions add staging-vector-store-id --data-file=-
+
+# Slack設定 (ダミー値でも起動可能)
+echo "dummy-slack-token" | gcloud secrets versions add staging-slack-bot-token --data-file=-
+echo "dummy-slack-secret" | gcloud secrets versions add staging-slack-signing-secret --data-file=-
+echo "dummy-channel-id" | gcloud secrets versions add staging-slack-channel-id --data-file=-
+
+# Twitter/X API設定 (ダミー値でも起動可能)
+echo "dummy-x-key" | gcloud secrets versions add staging-x-app-key --data-file=-
+echo "dummy-x-secret" | gcloud secrets versions add staging-x-app-secret --data-file=-
+echo "dummy-x-token" | gcloud secrets versions add staging-x-access-token --data-file=-
+echo "dummy-x-access" | gcloud secrets versions add staging-x-access-secret --data-file=-
+echo "dummy-x-bearer" | gcloud secrets versions add staging-x-bearer-token --data-file=-
+
+# Cron認証設定
+echo "dummy-cron-secret" | gcloud secrets versions add staging-cron-secret --data-file=-
+```
+
+**📋 設定確認:**
+```bash
+# 設定されたSecret一覧表示
+gcloud secrets list --filter="name:staging-*"
+
+# 特定のSecretのバージョン確認
+gcloud secrets versions list staging-openai-api-key
+```
+
+**💡 重要事項:**
+- **ダミー値でもCloud Run起動は成功**する
+- **実際の機能使用には正しいAPI key**が必要
+- 本番環境では `staging-` を `production-` に変更
 
 ## Cloud Run Configuration Updates
 - Added ENV environment variable support for fact-checker provider selection

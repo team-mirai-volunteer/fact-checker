@@ -22,7 +22,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     # workflow_runトリガーの場合は前ワークフローの成功をチェック
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.name == 'Deploy Base Infrastructure')
     outputs:
       environment: ${{ steps.env.outputs.environment }}
       branch_name: ${{ steps.env.outputs.branch_name }}

@@ -38,6 +38,16 @@ provider "google" {
   region  = var.region
 }
 
+# Artifact Registry Repository
+resource "google_artifact_registry_repository" "fact_checker_repo" {
+  location      = var.region
+  repository_id = "fact-checker-repo"
+  description   = "Fact Checker Docker Repository"
+  format        = "DOCKER"
+
+  labels = local.common_labels
+}
+
 module "secrets" {
   source = "./modules/secrets"
   

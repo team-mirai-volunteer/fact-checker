@@ -141,59 +141,16 @@ jobs:
           terraform init
           echo "✅ Terraform initialization completed"
       
-      - name: Create Secrets Only (First Step)
+      - name: Trigger Terraform Cloud Run
         working-directory: ./infrastructure
         env:
           TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
         run: |
-          echo "🚀 Step 1: Creating Secret Manager secrets only..."
-          terraform apply -auto-approve -target=module.secrets
-          echo "✅ Secret Manager secrets created"
-      
-      - name: Set Secret Values
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-        run: |
-          echo "📝 Setting placeholder values for secrets..."
-          
-          # Authenticate to Google Cloud
-          echo '${{ secrets.GCLOUD_SERVICE_KEY }}' | base64 -d > /tmp/gcp-key.json
-          gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
-          gcloud config set project ${{ secrets.PROJECT_ID }}
-          
-          # Set placeholder values for secrets
-          SECRET_NAMES=("openai-api-key" "vector-store-id" "slack-bot-token" "slack-signing-secret" "slack-channel-id" "x-app-key" "x-app-secret" "x-access-token" "x-access-secret" "x-bearer-token" "cron-secret")
-          for secret in "${SECRET_NAMES[@]}"; do
-            echo "Setting placeholder value for ${{ needs.validate.outputs.environment }}-${secret}"
-            echo "PLACEHOLDER_VALUE_${secret^^}" | gcloud secrets versions add ${{ needs.validate.outputs.environment }}-${secret} --data-file=- || true
-          done
-          
-          echo "✅ プレースホルダー値設定完了"
-          
-      - name: Terraform Apply (Complete Infrastructure)
-        working-directory: ./infrastructure
-        env:
-          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
-        run: |
-          echo "🚀 Step 2: Deploying complete infrastructure..."
-          echo "Environment: ${{ needs.validate.outputs.environment }}"
-          echo "App Name: ${{ needs.validate.outputs.app_name }}"
+          echo "🚀 Terraform Cloud でのデプロイをトリガー"
           echo "Workspace: ${{ needs.validate.outputs.workspace_name }}"
-          
-          terraform apply -auto-approve
-          echo "✅ Complete infrastructure deployment success"
-          echo ""
-          echo "⚠️  重要: 後で実際の値に更新してください"
-          echo "https://console.cloud.google.com/security/secret-manager?project=${{ secrets.PROJECT_ID }}"
-      
-      - name: Get Service URL
-        working-directory: ./infrastructure
-        env:
-          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
-        run: |
-          SERVICE_URL=$(terraform output -raw service_url)
-          echo "🌐 デプロイ完了: $SERVICE_URL"
-          echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
+          echo "Environment: ${{ needs.validate.outputs.environment }}"
+          echo "Terraform Cloud UI で確認してください:"
+          echo "https://app.terraform.io/app/fact-checker/workspaces/fact-checker-fs"
 
   safety-report:
     needs: [validate]

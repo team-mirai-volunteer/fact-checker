@@ -2,16 +2,6 @@ name: Deploy Infrastructure
 on:
   push:
     branches: ['**']
-  workflow_dispatch:
-    inputs:
-      action:
-        description: 'Action to perform'
-        required: true
-        default: 'plan'
-        type: choice
-        options:
-        - plan
-        - destroy-and-recreate
 
 permissions:
   contents: read
@@ -151,18 +141,7 @@ jobs:
           terraform init
           echo "✅ Terraform initialization completed"
       
-      - name: Terraform Destroy (for FS cleanup)
-        if: github.event.inputs.action == 'destroy-and-recreate'
-        working-directory: ./infrastructure
-        env:
-          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
-        run: |
-          echo "🗑️ FS環境のリソース削除開始"
-          terraform destroy -auto-approve
-          echo "✅ FS環境のリソース削除完了"
-
-      - name: Terraform Apply (recreate with new naming)
-        if: github.event.inputs.action == 'destroy-and-recreate'
+      - name: Terraform Apply
         working-directory: ./infrastructure
         env:
           TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
@@ -170,18 +149,6 @@ jobs:
           echo "🚀 新命名規則でのリソース作成開始"
           terraform apply -auto-approve
           echo "✅ 新命名規則でのリソース作成完了"
-      
-      - name: Trigger Terraform Cloud Run (plan only)
-        if: github.event.inputs.action != 'destroy-and-recreate'
-        working-directory: ./infrastructure
-        env:
-          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
-        run: |
-          echo "🚀 Terraform Cloud でのデプロイをトリガー"
-          echo "Workspace: ${{ needs.validate.outputs.workspace_name }}"
-          echo "Environment: ${{ needs.validate.outputs.environment }}"
-          echo "Terraform Cloud UI で確認してください:"
-          echo "https://app.terraform.io/app/fact-checker/workspaces/fact-checker-fs"
 
   safety-report:
     needs: [validate]

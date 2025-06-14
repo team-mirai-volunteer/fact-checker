@@ -73,6 +73,8 @@ jobs:
         working-directory: ./infrastructure
         env:
           TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
         run: |
           echo "🔍 Terraform Plan実行"
           terraform plan
@@ -154,6 +156,8 @@ jobs:
         working-directory: ./infrastructure
         env:
           TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
         run: |
           echo "🚀 Terraform Plan実行でTerraform Cloudをトリガー"
           terraform plan

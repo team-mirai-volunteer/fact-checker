@@ -3,6 +3,7 @@ terraform {
   
   # Remote State Backend として Terraform Cloud を使用
   # 設定は backend.tf で定義
+  # Workspace変数設定後のテスト
   
   required_providers {
     google = {

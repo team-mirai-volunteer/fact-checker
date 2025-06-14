@@ -10,7 +10,7 @@ resource "google_cloud_run_v2_service" "fact-checker" {
   labels = {
     environment = "staging"
     managed-by  = "terraform"
-    version     = "v1.2"
+    version     = "v1-2"
     team        = "mirai"
   }
   

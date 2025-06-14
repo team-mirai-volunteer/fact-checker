@@ -7,6 +7,11 @@ resource "google_cloud_run_v2_service" "fact-checker" {
   name     = var.app_name
   location = var.region
   
+  labels = {
+    environment = "staging"
+    managed-by  = "terraform"
+  }
+  
   template {
     service_account = google_service_account.cloud-run-sa.email
     

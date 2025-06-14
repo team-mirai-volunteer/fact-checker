@@ -1,8 +1,8 @@
 terraform {
   required_version = ">= 1.5.0"
   
-  # Local State Backend (temporary solution)
-  # TODO: Implement Remote State Backend after resolving authentication issues
+  # Remote State Backend として Terraform Cloud を使用
+  # 設定は backend.tf で定義
   
   required_providers {
     google = {

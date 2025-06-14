@@ -38,8 +38,8 @@ provider "google" {
   region  = var.region
 }
 
-# Artifact Registry Repository
-resource "google_artifact_registry_repository" "fact_checker_repo" {
+# Docker イメージ用 Artifact Registry リポジトリ
+resource "google_artifact_registry_repository" "fact-checker-repo" {
   location      = var.region
   repository_id = "fact-checker-repo"
   description   = "Fact Checker Docker Repository"

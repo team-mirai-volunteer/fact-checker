@@ -8,7 +8,7 @@ resource "google_secret_manager_secret" "secrets" {
   }
 }
 
-resource "google_secret_manager_secret_iam_member" "secret_accessor" {
+resource "google_secret_manager_secret_iam_member" "secret-accessor" {
   for_each = var.secrets
   
   secret_id = google_secret_manager_secret.secrets[each.key].secret_id

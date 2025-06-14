@@ -13,6 +13,7 @@ env:
   ENABLE_PRODUCTION_DEPLOY: false
   
   REGION: asia-northeast1
+  TF_CLOUD_ORGANIZATION: "fact-checker"  # Organization名に変更
 
 jobs:
   validate:
@@ -21,6 +22,7 @@ jobs:
       environment: ${{ steps.env.outputs.environment }}
       branch_name: ${{ steps.env.outputs.branch_name }}
       app_name: ${{ steps.env.outputs.app_name }}
+      workspace_name: ${{ steps.env.outputs.workspace_name }}
     
     steps:
       - name: Checkout
@@ -32,9 +34,11 @@ jobs:
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "environment=production" >> $GITHUB_OUTPUT
             echo "app_name=x-fact-checker-prod" >> $GITHUB_OUTPUT
+            echo "workspace_name=fact-checker-fs" >> $GITHUB_OUTPUT
           else
             echo "environment=staging" >> $GITHUB_OUTPUT
             echo "app_name=x-fact-checker-staging" >> $GITHUB_OUTPUT
+            echo "workspace_name=fact-checker-fs" >> $GITHUB_OUTPUT
           fi
           echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           
@@ -42,18 +46,24 @@ jobs:
           echo "Branch: ${{ github.ref_name }}"
           echo "Environment: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")"
           echo "App Name: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "x-fact-checker-prod" || echo "x-fact-checker-staging")"
+          echo "Workspace: fact-checker-fs"
       
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
       
       - name: Terraform Init
         working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
         run: terraform init
       
       - name: Terraform Validate
         working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
         run: |
           echo "🔍 Terraform構文チェック実行"
           terraform validate
@@ -62,18 +72,11 @@ jobs:
       - name: Terraform Plan (Dry Run)
         working-directory: ./infrastructure
         env:
-          TF_VAR_gcp_project_id: "dummy-project-id"
-          TF_VAR_branch_name: ${{ steps.env.outputs.branch_name }}
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
         run: |
-          echo "🔍 Terraform Plan実行（実際のリソース作成なし）"
-          if terraform plan -out=tfplan 2>&1 | tee plan_output.log | grep -q "could not find default credentials"; then
-            echo "⚠️ CI環境のため認証情報なし - 構文チェックは完了"
-            echo "✅ Terraform構文・モジュール構造は正常"
-            exit 0
-          else
-            terraform plan -out=tfplan
-            echo "✅ Terraform Plan成功"
-          fi
+          echo "🔍 Terraform Plan実行"
+          terraform plan
+          echo "✅ Terraform Plan成功"
           
           echo "=== 安全弁状況 ==="
           echo "ENABLE_DOCKER_BUILD: ${{ env.ENABLE_DOCKER_BUILD }}"
@@ -123,72 +126,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
-          project_id: ${{ secrets.PROJECT_ID }}
-          create_credentials_file: true
-          export_environment_variables: true
-      
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-      
-      - name: Clean Existing Resources (avoid conflicts)
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-        run: |
-          echo "🧹 Cleaning existing resources to avoid conflicts..."
-          
-          # Delete existing Cloud Run services if they exist
-          echo "Checking Cloud Run services..."
-          if gcloud run services describe x-fact-checker-staging --region=asia-northeast1 >/dev/null 2>&1; then
-            echo "Deleting existing Cloud Run service: x-fact-checker-staging"
-            gcloud run services delete x-fact-checker-staging --region=asia-northeast1 --quiet || true
-          fi
-          
-          # Delete existing service accounts if they exist
-          echo "Checking service accounts..."
-          if gcloud iam service-accounts describe x-fact-checker-staging-sa@${PROJECT_ID}.iam.gserviceaccount.com >/dev/null 2>&1; then
-            echo "Deleting existing service account: x-fact-checker-staging-sa"
-            gcloud iam service-accounts delete x-fact-checker-staging-sa@${PROJECT_ID}.iam.gserviceaccount.com --quiet || true
-          fi
-          
-          if gcloud iam service-accounts describe x-fact-checker-staging-cron-sa@${PROJECT_ID}.iam.gserviceaccount.com >/dev/null 2>&1; then
-            echo "Deleting existing service account: x-fact-checker-staging-cron-sa"
-            gcloud iam service-accounts delete x-fact-checker-staging-cron-sa@${PROJECT_ID}.iam.gserviceaccount.com --quiet || true
-          fi
-          
-          # Delete existing secrets if they exist
-          echo "Checking secrets..."
-          SECRET_NAMES=("openai-api-key" "vector-store-id" "slack-bot-token" "slack-signing-secret" "slack-channel-id" "x-app-key" "x-app-secret" "x-access-token" "x-access-secret" "x-bearer-token" "cron-secret")
-          for secret in "${SECRET_NAMES[@]}"; do
-            if gcloud secrets describe staging-${secret} >/dev/null 2>&1; then
-              echo "Deleting existing secret: staging-${secret}"
-              gcloud secrets delete staging-${secret} --quiet || true
-            fi
-          done
-          
-          echo "✅ Resource cleanup completed"
-      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
       
-      - name: Terraform Init (Local State)
+      - name: Terraform Init (Terraform Cloud)
         working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
         run: |
-          echo "🚀 Initializing Terraform with Local State..."
+          echo "🚀 Initializing Terraform with Terraform Cloud..."
           terraform init
           echo "✅ Terraform initialization completed"
       
       - name: Create Secrets Only (First Step)
         working-directory: ./infrastructure
         env:
-          TF_VAR_gcp_project_id: ${{ secrets.PROJECT_ID }}
-          TF_VAR_branch_name: ${{ needs.validate.outputs.branch_name }}
-          TF_VAR_region: ${{ env.REGION }}
+          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
         run: |
           echo "🚀 Step 1: Creating Secret Manager secrets only..."
           terraform apply -auto-approve -target=module.secrets
@@ -200,11 +156,16 @@ jobs:
         run: |
           echo "📝 Setting placeholder values for secrets..."
           
+          # Authenticate to Google Cloud
+          echo '${{ secrets.GCLOUD_SERVICE_KEY }}' | base64 -d > /tmp/gcp-key.json
+          gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+          gcloud config set project ${{ secrets.PROJECT_ID }}
+          
           # Set placeholder values for secrets
           SECRET_NAMES=("openai-api-key" "vector-store-id" "slack-bot-token" "slack-signing-secret" "slack-channel-id" "x-app-key" "x-app-secret" "x-access-token" "x-access-secret" "x-bearer-token" "cron-secret")
           for secret in "${SECRET_NAMES[@]}"; do
-            echo "Setting placeholder value for staging-${secret}"
-            echo "PLACEHOLDER_VALUE_${secret^^}" | gcloud secrets versions add staging-${secret} --data-file=- || true
+            echo "Setting placeholder value for ${{ needs.validate.outputs.environment }}-${secret}"
+            echo "PLACEHOLDER_VALUE_${secret^^}" | gcloud secrets versions add ${{ needs.validate.outputs.environment }}-${secret} --data-file=- || true
           done
           
           echo "✅ プレースホルダー値設定完了"
@@ -212,13 +173,12 @@ jobs:
       - name: Terraform Apply (Complete Infrastructure)
         working-directory: ./infrastructure
         env:
-          TF_VAR_gcp_project_id: ${{ secrets.PROJECT_ID }}
-          TF_VAR_branch_name: ${{ needs.validate.outputs.branch_name }}
-          TF_VAR_region: ${{ env.REGION }}
+          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
         run: |
           echo "🚀 Step 2: Deploying complete infrastructure..."
           echo "Environment: ${{ needs.validate.outputs.environment }}"
           echo "App Name: ${{ needs.validate.outputs.app_name }}"
+          echo "Workspace: ${{ needs.validate.outputs.workspace_name }}"
           
           terraform apply -auto-approve
           echo "✅ Complete infrastructure deployment success"
@@ -228,6 +188,8 @@ jobs:
       
       - name: Get Service URL
         working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
         run: |
           SERVICE_URL=$(terraform output -raw service_url)
           echo "🌐 デプロイ完了: $SERVICE_URL"

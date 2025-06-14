@@ -141,14 +141,18 @@ jobs:
           terraform init
           echo "✅ Terraform initialization completed"
       
-      - name: Terraform Apply
+      - name: Trigger Terraform Cloud Apply
         working-directory: ./infrastructure
         env:
           TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
         run: |
-          echo "🚀 新命名規則でのリソース作成開始"
-          terraform apply -auto-approve
-          echo "✅ 新命名規則でのリソース作成完了"
+          echo "🚀 Terraform Cloud でのVCS-drivenデプロイを開始"
+          echo "Plan作成完了 - Terraform Cloud UIで自動的にApplyされます"
+          echo ""
+          echo "📋 確認方法:"
+          echo "1. Terraform Cloud UI: https://app.terraform.io/app/fact-checker/workspaces/fact-checker-fs"
+          echo "2. Run詳細でリソース作成状況を確認"
+          echo "3. Auto-applyが有効な場合は自動実行、無効な場合は手動でApplyボタンをクリック"
 
   safety-report:
     needs: [validate]

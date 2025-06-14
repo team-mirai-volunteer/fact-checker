@@ -68,3 +68,14 @@ variable "cron_schedule" {
   type        = string
   default     = "0 */2 * * *"
 }
+
+variable "deploy_phase" {
+  description = "Deployment phase: base (infrastructure only) or app (full deployment)"
+  type        = string
+  default     = "app"
+  
+  validation {
+    condition     = contains(["base", "app"], var.deploy_phase)
+    error_message = "deploy_phase must be either 'base' or 'app'."
+  }
+}

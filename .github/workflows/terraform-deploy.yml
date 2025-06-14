@@ -1,7 +1,17 @@
-name: Deploy Infrastructure
+# ⚠️ DEPRECATED: このワークフローは段階的デプロイに置き換えられました
+# 
+# 新しいワークフロー:
+# 1. infrastructure-base-deploy.yml (基盤インフラ)
+# 2. docker-build-deploy.yml (Docker Build & Push)  
+# 3. app-deploy.yml (アプリケーション)
+#
+# 循環依存問題を解決するため、上記の順序で実行してください。
+# このファイルは後方互換性のために残されていますが、推奨しません。
+
+name: Deploy Infrastructure (DEPRECATED)
 on:
-  push:
-    branches: ['**']
+  # push:
+  #   branches: ['**']  # 新しいワークフローに移行のため無効化
 
 permissions:
   contents: read

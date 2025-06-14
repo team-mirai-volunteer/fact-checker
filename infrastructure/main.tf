@@ -48,15 +48,9 @@ resource "google_artifact_registry_repository" "fact-checker-repo" {
   labels = local.common_labels
 }
 
-module "secrets" {
-  source = "./modules/secrets"
-  
-  environment            = local.environment
-  service_account_email  = module.fact_checker_app.service_account_email
-  secrets                = var.secrets
-}
-
+# アプリケーションデプロイフェーズでのみ作成
 module "fact_checker_app" {
+  count  = var.deploy_phase == "app" ? 1 : 0
   source = "./modules/fact-checker-app"
   
   app_name         = local.app_name
@@ -70,27 +64,37 @@ module "fact_checker_app" {
     ENV = local.environment == "production" ? "prod" : "dev"
   }
   secret_env_vars  = {
-    OPENAI_API_KEY      = module.secrets.secret_versions["openai-api-key"]
-    VECTOR_STORE_ID     = module.secrets.secret_versions["vector-store-id"]
-    SLACK_BOT_TOKEN     = module.secrets.secret_versions["slack-bot-token"]
-    SLACK_SIGNING_SECRET = module.secrets.secret_versions["slack-signing-secret"]
-    SLACK_CHANNEL_ID    = module.secrets.secret_versions["slack-channel-id"]
-    X_APP_KEY           = module.secrets.secret_versions["x-app-key"]
-    X_APP_SECRET        = module.secrets.secret_versions["x-app-secret"]
-    X_ACCESS_TOKEN      = module.secrets.secret_versions["x-access-token"]
-    X_ACCESS_SECRET     = module.secrets.secret_versions["x-access-secret"]
-    X_BEARER_TOKEN      = module.secrets.secret_versions["x-bearer-token"]
-    CRON_SECRET         = module.secrets.secret_versions["cron-secret"]
+    OPENAI_API_KEY      = module.secrets[0].secret_versions["openai-api-key"]
+    VECTOR_STORE_ID     = module.secrets[0].secret_versions["vector-store-id"]
+    SLACK_BOT_TOKEN     = module.secrets[0].secret_versions["slack-bot-token"]
+    SLACK_SIGNING_SECRET = module.secrets[0].secret_versions["slack-signing-secret"]
+    SLACK_CHANNEL_ID    = module.secrets[0].secret_versions["slack-channel-id"]
+    X_APP_KEY           = module.secrets[0].secret_versions["x-app-key"]
+    X_APP_SECRET        = module.secrets[0].secret_versions["x-app-secret"]
+    X_ACCESS_TOKEN      = module.secrets[0].secret_versions["x-access-token"]
+    X_ACCESS_SECRET     = module.secrets[0].secret_versions["x-access-secret"]
+    X_BEARER_TOKEN      = module.secrets[0].secret_versions["x-bearer-token"]
+    CRON_SECRET         = module.secrets[0].secret_versions["cron-secret"]
   }
 }
 
+module "secrets" {
+  count  = var.deploy_phase == "app" ? 1 : 0
+  source = "./modules/secrets"
+  
+  environment            = local.environment
+  service_account_email  = module.fact_checker_app[0].service_account_email
+  secrets                = var.secrets
+}
+
 module "scheduler" {
+  count  = var.deploy_phase == "app" ? 1 : 0
   source = "./modules/scheduler"
   
   app_name        = local.app_name
   region          = var.region
-  service_url     = module.fact_checker_app.service_url
-  service_name    = module.fact_checker_app.service_name
+  service_url     = module.fact_checker_app[0].service_url
+  service_name    = module.fact_checker_app[0].service_name
   schedule        = local.current_config.schedule
-  cron_secret     = module.secrets.secret_versions["cron-secret"]
+  cron_secret     = module.secrets[0].secret_versions["cron-secret"]
 }

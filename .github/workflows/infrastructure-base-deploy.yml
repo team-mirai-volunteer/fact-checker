@@ -1,0 +1,154 @@
+name: Deploy Base Infrastructure
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  ENABLE_BASE_INFRASTRUCTURE: false
+  
+  REGION: asia-northeast1
+  TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      branch_name: ${{ steps.env.outputs.branch_name }}
+      workspace_name: ${{ steps.env.outputs.workspace_name }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set Environment Variables
+        id: env
+        run: |
+          echo "environment=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")" >> $GITHUB_OUTPUT
+          echo "workspace_name=fact-checker-fs" >> $GITHUB_OUTPUT
+          echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          
+          echo "=== Environment Detection ==="
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Environment: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")"
+          echo "Workspace: fact-checker-fs"
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      
+      - name: Terraform Init
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
+        run: terraform init
+      
+      - name: Terraform Validate
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
+        run: |
+          echo "🔍 基盤インフラTerraform構文チェック実行"
+          terraform validate
+          echo "✅ 基盤インフラTerraform構文チェック成功"
+      
+      - name: Terraform Plan (Dry Run)
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
+          TF_VAR_deploy_phase: "base"
+        run: |
+          echo "🔍 基盤インフラTerraform Plan実行"
+          terraform plan -var="deploy_phase=base"
+          echo "✅ 基盤インフラTerraform Plan成功"
+          
+          echo "=== 安全弁状況 ==="
+          echo "ENABLE_BASE_INFRASTRUCTURE: ${{ env.ENABLE_BASE_INFRASTRUCTURE }}"
+
+  terraform-apply:
+    needs: validate
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_BASE_INFRASTRUCTURE == 'true'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          project_id: ${{ secrets.PROJECT_ID }}
+      
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      
+      - name: Terraform Init (Terraform Cloud)
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
+        run: |
+          echo "🚀 基盤インフラTerraform初期化中..."
+          terraform init
+          echo "✅ 基盤インフラTerraform初期化完了"
+      
+      - name: Terraform Plan (triggers Terraform Cloud)
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ needs.validate.outputs.workspace_name }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
+          TF_VAR_deploy_phase: "base"
+        run: |
+          echo "🚀 基盤インフラTerraform Plan実行でTerraform Cloudをトリガー"
+          terraform plan -var="deploy_phase=base"
+          echo "✅ 基盤インフラPlan完了 - Terraform Cloud UIでApply確認・実行してください"
+          echo ""
+          echo "📋 次のステップ:"
+          echo "1. Terraform Cloud UI: https://app.terraform.io/app/fact-checker/workspaces/fact-checker-fs"
+          echo "2. 最新Runの詳細を確認"
+          echo "3. Auto-apply無効の場合は手動でApplyボタンをクリック"
+          echo ""
+          echo "📦 作成されるリソース:"
+          echo "- Artifact Registry リポジトリ (fact-checker-repo)"
+
+  safety-report:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Base Infrastructure Safety Status Report
+        run: |
+          echo "=== 🔒 基盤インフラ安全弁状況レポート ==="
+          echo "ENABLE_BASE_INFRASTRUCTURE: ${{ vars.ENABLE_BASE_INFRASTRUCTURE }}"
+          echo ""
+          echo "=== 📋 実行結果 ==="
+          echo "✅ Phase 1 (Validate): 常に実行"
+          echo "$([ '${{ vars.ENABLE_BASE_INFRASTRUCTURE }}' = 'true' ] && echo '✅' || echo '❌') Phase 1 (Base Infrastructure Deploy): ${{ vars.ENABLE_BASE_INFRASTRUCTURE }}"
+          echo ""
+          echo "=== 📖 次のステップ ==="
+          if [ "${{ vars.ENABLE_BASE_INFRASTRUCTURE }}" != "true" ]; then
+            echo "1. ENABLE_BASE_INFRASTRUCTURE=trueに設定して基盤インフラデプロイをテスト"
+            echo "   → Artifact Registryリポジトリが作成されます"
+            echo "2. 基盤インフラ作成後、Docker Build & Pushが可能になります"
+          else
+            echo "🎉 基盤インフラが適切に設定されています"
+            echo "次は docker-build-deploy.yml ワークフローを有効化してください"
+          fi

@@ -1,0 +1,196 @@
+name: Docker Build & Deploy
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Deploy Base Infrastructure"]
+    types: [completed]
+    branches: ['**']
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  ENABLE_DOCKER_BUILD: false
+  
+  REGION: asia-northeast1
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    # workflow_runトリガーの場合は前ワークフローの成功をチェック
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      branch_name: ${{ steps.env.outputs.branch_name }}
+      app_name: ${{ steps.env.outputs.app_name }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set Environment Variables
+        id: env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "app_name=x-fact-checker-prod" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "app_name=x-fact-checker-staging" >> $GITHUB_OUTPUT
+          fi
+          echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          
+          echo "=== Environment Detection ==="
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Environment: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")"
+          echo "App Name: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "x-fact-checker-prod" || echo "x-fact-checker-staging")"
+      
+      - name: Authenticate to Google Cloud (for prerequisite check)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          project_id: ${{ secrets.PROJECT_ID }}
+      
+      - name: Setup Google Cloud SDK (for prerequisite check)
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Check Base Infrastructure Prerequisites
+        run: |
+          echo "🔍 基盤インフラ前提条件チェック実行中..."
+          
+          # Artifact Registryリポジトリの存在確認
+          if gcloud artifacts repositories describe fact-checker-repo \
+               --location=${{ env.REGION }} \
+               --project=${{ secrets.PROJECT_ID }} >/dev/null 2>&1; then
+            echo "✅ Artifact Registry リポジトリ (fact-checker-repo) 確認済み"
+          else
+            echo "❌ Artifact Registry リポジトリが見つかりません"
+            echo "📋 必要なアクション:"
+            echo "1. infrastructure-base-deploy.yml で ENABLE_BASE_INFRASTRUCTURE=true を設定"
+            echo "2. 基盤インフラワークフローを実行"
+            echo "3. Terraform Cloud UI で Apply を実行"
+            exit 1
+          fi
+          
+          echo ""
+          echo "🎉 すべての前提条件が満たされています"
+          echo "Docker Build & Push を開始できます"
+
+  docker-build:
+    needs: validate
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_DOCKER_BUILD == 'true'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          project_id: ${{ secrets.PROJECT_ID }}
+      
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Configure Docker for Artifact Registry
+        run: |
+          echo "🔧 Docker認証設定中..."
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+          echo "✅ Docker認証設定完了"
+      
+      - name: Build and Push Docker Image
+        env:
+          APP_NAME: ${{ needs.validate.outputs.app_name }}
+        run: |
+          echo "🐳 Dockerイメージビルド開始"
+          IMAGE_SHA="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:${{ github.sha }}"
+          IMAGE_LATEST="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:latest"
+          
+          echo "📦 ビルド対象イメージ:"
+          echo "  SHA tag: $IMAGE_SHA"
+          echo "  Latest tag: $IMAGE_LATEST"
+          
+          # Build and push with SHA tag (with retry)
+          echo "🔨 イメージビルド実行..."
+          RETRY_COUNT=0
+          MAX_RETRIES=3
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if gcloud builds submit --tag "$IMAGE_SHA" --quiet; then
+              echo "✅ Dockerイメージビルド成功: $IMAGE_SHA"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "⚠️ ビルド失敗 (試行 $RETRY_COUNT/$MAX_RETRIES)"
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "🔄 30秒後にリトライします..."
+                sleep 30
+              else
+                echo "❌ 最大リトライ回数に達しました。失敗"
+                exit 1
+              fi
+            fi
+          done
+          
+          # Tag and push as latest (with retry)
+          echo "🏷️ latest タグ作成中..."
+          RETRY_COUNT=0
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if gcloud container images add-tag "$IMAGE_SHA" "$IMAGE_LATEST" --quiet; then
+              echo "✅ latest タグ作成完了: $IMAGE_LATEST"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "⚠️ タグ作成失敗 (試行 $RETRY_COUNT/$MAX_RETRIES)"
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "🔄 10秒後にリトライします..."
+                sleep 10
+              else
+                echo "❌ 最大リトライ回数に達しました。失敗"
+                exit 1
+              fi
+            fi
+          done
+          
+          echo ""
+          echo "📋 次のステップ:"
+          echo "1. app-deploy.yml ワークフローが自動的に開始されます"
+          echo "2. ENABLE_APP_DEPLOY=true が設定されている場合のみ実行"
+
+  safety-report:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Docker Build Safety Status Report
+        run: |
+          echo "=== 🔒 Docker Build安全弁状況レポート ==="
+          echo "ENABLE_DOCKER_BUILD: ${{ vars.ENABLE_DOCKER_BUILD }}"
+          echo ""
+          echo "=== 📋 実行結果 ==="
+          echo "✅ Phase 2 (Validate): 常に実行"
+          echo "$([ '${{ vars.ENABLE_DOCKER_BUILD }}' = 'true' ] && echo '✅' || echo '❌') Phase 2 (Docker Build): ${{ vars.ENABLE_DOCKER_BUILD }}"
+          echo ""
+          echo "=== 📖 次のステップ ==="
+          if [ "${{ vars.ENABLE_DOCKER_BUILD }}" != "true" ]; then
+            echo "⚠️  前提条件確認:"
+            echo "1. infrastructure-base-deploy.yml で基盤インフラが作成済みか確認"
+            echo "2. ENABLE_DOCKER_BUILD=trueに設定してDockerビルドをテスト"
+            echo "   → Docker imageがArtifact Registryにpushされます"
+          else
+            echo "🎉 Docker Buildが適切に設定されています"
+            echo "次は app-deploy.yml ワークフローを有効化してください"
+          fi
+          
+          echo ""
+          echo "=== 🔄 デプロイフロー確認 ==="
+          echo "Phase 1: infrastructure-base-deploy.yml (基盤インフラ) ← 完了必須"
+          echo "Phase 2: docker-build-deploy.yml (Docker Build) ← 現在のワークフロー"
+          echo "Phase 3: app-deploy.yml (アプリケーション) ← 次のステップ"

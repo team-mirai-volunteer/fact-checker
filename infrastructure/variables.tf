@@ -1,3 +1,14 @@
+# =============================================================================
+# Terraform ルート変数定義
+# =============================================================================
+# このファイルの目的:
+# - Terraformのメイン設定で使用する変数を定義
+# - GitHub Actions ワークフローから渡される値を受け取る
+# - 全モジュールで共通して使用される設定値を管理
+# - terraform plan/apply 実行時の入力パラメータとして機能
+# =============================================================================
+
+# 基盤設定
 variable "gcp_project_id" {
   description = "GCP Project ID"
   type        = string
@@ -15,6 +26,7 @@ variable "region" {
   default     = "asia-northeast1"
 }
 
+# Secret Manager 設定
 variable "secrets" {
   description = "Map of secret names to create"
   type        = map(string)
@@ -33,6 +45,7 @@ variable "secrets" {
   }
 }
 
+# Cloud Run 設定
 variable "min_instances" {
   description = "Minimum number of Cloud Run instances"
   type        = number
@@ -57,6 +70,7 @@ variable "memory_limit" {
   default     = "512Mi"
 }
 
+# アプリケーション設定
 variable "log_level" {
   description = "Application log level"
   type        = string
@@ -69,6 +83,7 @@ variable "cron_schedule" {
   default     = "0 */2 * * *"
 }
 
+# デプロイ制御
 variable "deploy_phase" {
   description = "Deployment phase: base (infrastructure only) or app (full deployment)"
   type        = string

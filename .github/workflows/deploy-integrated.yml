@@ -23,6 +23,11 @@ env:
   
   REGION: asia-northeast1
   TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
+  
+  # ベース名称
+  APP_NAME_BASE: "x-fact-checker"
+  WORKSPACE_BASE: "fact-checker"
+  ARTIFACT_REPO_BASE: "fact-checker-repo"
 
 jobs:
   # Phase 1: 基盤インフラストラクチャ
@@ -40,14 +45,26 @@ jobs:
       - name: Set Environment Variables
         id: env
         run: |
-          echo "environment=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")" >> $GITHUB_OUTPUT
-          echo "workspace_name=fact-checker-fs" >> $GITHUB_OUTPUT
+          # 環境判定
+          ENVIRONMENT=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")
+          
+          # ENV使って各種名称生成
+          APP_NAME="${{ env.APP_NAME_BASE }}-$ENVIRONMENT"
+          # TODO: staging環境は当面 fs で設定、今後 staging に変更予定
+          WORKSPACE_SUFFIX=$([ "$ENVIRONMENT" = "production" ] && echo "production" || echo "fs")
+          WORKSPACE_NAME="${TF_WORKSPACE:-${{ env.WORKSPACE_BASE }}-$WORKSPACE_SUFFIX}"
+          
+          # GitHub Outputに設定
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
           echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "workspace_name=$WORKSPACE_NAME" >> $GITHUB_OUTPUT
           
           echo "=== Phase 1: 基盤インフラ ==="
           echo "Branch: ${{ github.ref_name }}"
-          echo "Environment: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")"
-          echo "Workspace: fact-checker-fs"
+          echo "Environment: $ENVIRONMENT"
+          echo "App Name: $APP_NAME"
+          echo "Workspace: $WORKSPACE_NAME"
       
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -123,7 +140,7 @@ jobs:
           echo "✅ 基盤インフラPlan完了 - Terraform Cloud UIでApply確認・実行してください"
           echo ""
           echo "📦 作成されるリソース:"
-          echo "- Artifact Registry リポジトリ (fact-checker-repo)"
+          echo "- Artifact Registry リポジトリ (${{ env.ARTIFACT_REPO_BASE }})"
           echo "- Secret Manager シークレット（基盤フェーズ）"
           echo ""
           echo "📋 次のステップ:"
@@ -146,14 +163,18 @@ jobs:
       - name: Set Environment Variables
         id: env
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "app_name=x-fact-checker-prod" >> $GITHUB_OUTPUT
-          else
-            echo "app_name=x-fact-checker-staging" >> $GITHUB_OUTPUT
-          fi
+          # 環境判定
+          ENVIRONMENT=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")
+          
+          # ENV使って各種名称生成
+          APP_NAME="${{ env.APP_NAME_BASE }}-$ENVIRONMENT"
+          
+          # GitHub Outputに設定
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
           
           echo "=== Phase 2: Docker Build ==="
-          echo "App Name: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "x-fact-checker-prod" || echo "x-fact-checker-staging")"
+          echo "Environment: $ENVIRONMENT"
+          echo "App Name: $APP_NAME"
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -169,10 +190,10 @@ jobs:
           echo "🔍 基盤インフラ前提条件チェック実行中..."
           
           # Artifact Registryリポジトリの存在確認
-          if gcloud artifacts repositories describe fact-checker-repo \
+          if gcloud artifacts repositories describe ${{ env.ARTIFACT_REPO_BASE }} \
                --location=${{ env.REGION }} \
                --project=${{ secrets.PROJECT_ID }} >/dev/null 2>&1; then
-            echo "✅ Artifact Registry リポジトリ (fact-checker-repo) 確認済み"
+            echo "✅ Artifact Registry リポジトリ (${{ env.ARTIFACT_REPO_BASE }}) 確認済み"
           else
             echo "❌ Artifact Registry リポジトリが見つかりません"
             echo "📋 必要なアクション: Terraform Cloud UIで基盤インフラのApplyを実行してください"
@@ -192,8 +213,8 @@ jobs:
           APP_NAME: ${{ steps.env.outputs.app_name }}
         run: |
           echo "🐳 Dockerイメージビルド開始"
-          IMAGE_SHA="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:${{ github.sha }}"
-          IMAGE_LATEST="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:latest"
+          IMAGE_SHA="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.ARTIFACT_REPO_BASE }}/${{ env.APP_NAME }}:${{ github.sha }}"
+          IMAGE_LATEST="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.ARTIFACT_REPO_BASE }}/${{ env.APP_NAME }}:latest"
           
           echo "📦 ビルド対象イメージ:"
           echo "  SHA tag: $IMAGE_SHA"
@@ -261,7 +282,7 @@ jobs:
           fi
           
           # Docker imageの存在確認
-          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${APP_NAME}:latest"
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.ARTIFACT_REPO_BASE }}/${APP_NAME}:latest"
           if gcloud container images describe "$IMAGE_URL" >/dev/null 2>&1; then
             echo "✅ Docker image 確認済み: $IMAGE_URL"
           else
@@ -352,5 +373,5 @@ jobs:
           
           echo ""
           echo "=== 🔗 有用なリンク ==="
-          echo "- Terraform Cloud: https://app.terraform.io/app/fact-checker/workspaces/fact-checker-fs"
+          echo "- Terraform Cloud: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ needs.infrastructure-base.outputs.workspace_name }}"
           echo "- GitHub Actions: https://github.com/${{ github.repository }}/actions"

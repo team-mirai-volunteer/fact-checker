@@ -30,7 +30,6 @@ locals {
     environment = local.environment
     application = "fact-checker"
     managed-by  = "terraform"
-    version     = "v1-2-2"
   }
 }
 

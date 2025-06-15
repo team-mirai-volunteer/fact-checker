@@ -8,10 +8,5 @@ resource "google_secret_manager_secret" "secrets" {
   }
 }
 
-resource "google_secret_manager_secret_iam_member" "secret-accessor" {
-  for_each = var.secrets
-  
-  secret_id = google_secret_manager_secret.secrets[each.key].secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${var.service_account_email}"
-}
+# IAM権限付与はメインのmain.tfで実行
+# （サービスアカウント作成後に実行するため）

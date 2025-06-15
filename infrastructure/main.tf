@@ -48,10 +48,22 @@ resource "google_artifact_registry_repository" "fact-checker-repo" {
   labels = local.common_labels
 }
 
+# Secret作成（サービスアカウント不要）
+module "secrets" {
+  count  = var.deploy_phase == "app" ? 1 : 0
+  source = "./modules/secrets"
+  
+  environment            = local.environment
+  service_account_email  = ""  # 空文字でSecret作成のみ
+  secrets                = var.secrets
+}
+
 # アプリケーションデプロイフェーズでのみ作成
 module "fact_checker_app" {
   count  = var.deploy_phase == "app" ? 1 : 0
   source = "./modules/fact-checker-app"
+  
+  depends_on = [module.secrets]  # Secretsの作成完了を待つ
   
   app_name         = local.app_name
   region           = var.region
@@ -78,13 +90,15 @@ module "fact_checker_app" {
   }
 }
 
-module "secrets" {
-  count  = var.deploy_phase == "app" ? 1 : 0
-  source = "./modules/secrets"
+# IAM権限付与（サービスアカウント作成後）
+resource "google_secret_manager_secret_iam_member" "secret-accessor" {
+  for_each = var.deploy_phase == "app" ? var.secrets : {}
   
-  environment            = local.environment
-  service_account_email  = module.fact_checker_app[0].service_account_email
-  secrets                = var.secrets
+  secret_id = module.secrets[0].secret_ids[each.key]
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.fact_checker_app[0].service_account_email}"
+  
+  depends_on = [module.fact_checker_app, module.secrets]
 }
 
 module "scheduler" {

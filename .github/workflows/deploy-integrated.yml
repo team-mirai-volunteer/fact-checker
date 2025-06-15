@@ -66,12 +66,9 @@ jobs:
         working-directory: ./infrastructure
         env:
           TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
-          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
-          TF_VAR_deploy_phase: "base"
         run: |
-          echo "🔍 基盤インフラTerraform Plan実行"
-          terraform plan -var="deploy_phase=base"
+          echo "🔍 基盤インフラTerraform Plan実行（Terraform Cloud リモート）"
+          terraform plan -var="deploy_phase=base" -var="branch_name=${{ steps.env.outputs.branch_name }}" -var="gcp_project_id=${{ secrets.PROJECT_ID }}"
           echo "✅ 基盤インフラTerraform Plan成功"
 
   # Phase 1 Apply: 基盤インフラ作成
@@ -112,16 +109,19 @@ jobs:
         working-directory: ./infrastructure
         env:
           TF_WORKSPACE: ${{ needs.infrastructure-base.outputs.workspace_name }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
-          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
-          TF_VAR_deploy_phase: "base"
         run: |
-          echo "🚀 基盤インフラTerraform Plan実行でTerraform Cloudをトリガー"
-          terraform plan -var="deploy_phase=base"
+          echo "🚀 基盤インフラTerraform Plan実行でTerraform Cloud（リモート）をトリガー"
+          terraform plan -var="deploy_phase=base" -var="branch_name=${{ needs.infrastructure-base.outputs.branch_name }}" -var="gcp_project_id=${{ secrets.PROJECT_ID }}"
           echo "✅ 基盤インフラPlan完了 - Terraform Cloud UIでApply確認・実行してください"
           echo ""
           echo "📦 作成されるリソース:"
           echo "- Artifact Registry リポジトリ (fact-checker-repo)"
+          echo "- Secret Manager シークレット（基盤フェーズ）"
+          echo ""
+          echo "📋 次のステップ:"
+          echo "1. Terraform Cloud UI: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ needs.infrastructure-base.outputs.workspace_name }}"
+          echo "2. 最新Runの詳細を確認"
+          echo "3. Auto-apply無効の場合は手動でApplyボタンをクリック"
 
   # Phase 2: Docker Build & Push
   docker-build:
@@ -282,19 +282,20 @@ jobs:
         working-directory: ./infrastructure
         env:
           TF_WORKSPACE: ${{ needs.infrastructure-base.outputs.workspace_name }}
-          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
-          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
-          TF_VAR_deploy_phase: "app"
         run: |
-          echo "🚀 アプリケーションTerraform Plan実行でTerraform Cloudをトリガー"
-          terraform plan -var="deploy_phase=app"
+          echo "🚀 アプリケーションTerraform Plan実行でTerraform Cloud（リモート）をトリガー"
+          terraform plan -var="deploy_phase=app" -var="branch_name=${{ needs.infrastructure-base.outputs.branch_name }}" -var="gcp_project_id=${{ secrets.PROJECT_ID }}"
           echo "✅ アプリケーションPlan完了 - Terraform Cloud UIでApply確認・実行してください"
           echo ""
           echo "📦 作成されるリソース:"
           echo "- Cloud Run サービス (${{ needs.docker-build.outputs.app_name }})"
-          echo "- Secret Manager シークレット" 
+          echo "- IAM ロール・ポリシー（Secret アクセス権限）"
           echo "- Cloud Scheduler ジョブ"
-          echo "- IAM ロール・ポリシー"
+          echo ""
+          echo "📋 次のステップ:"
+          echo "1. Terraform Cloud UI: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ needs.infrastructure-base.outputs.workspace_name }}"
+          echo "2. 最新Runの詳細を確認"
+          echo "3. Auto-apply無効の場合は手動でApplyボタンをクリック"
 
   # 統合レポート
   deployment-report:

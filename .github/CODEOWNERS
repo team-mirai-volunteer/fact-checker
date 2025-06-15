@@ -1,0 +1,3 @@
+# Global code owners
+# These users will be automatically requested for review when a PR is opened
+* @FMs-sugiyama @ttizze @skanehira

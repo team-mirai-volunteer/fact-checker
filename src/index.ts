@@ -1,8 +1,7 @@
 import { Hono } from "hono";
 import { createFactChecker } from "./lib/fact_checker";
-import { notifySlack, slackApp } from "./lib/slack";
-import { sendSlackMessage } from "./lib/slack/sendSlackMessage";
-import { twitter } from "./lib/twitter";
+import { createSlackProvider } from "./lib/slack";
+import { createTwitterProvider } from "./lib/twitter";
 import { buildSearchQuery } from "./lib/twitter_query/query_build";
 import { verifyCron } from "./middlewares/verify-cron";
 
@@ -12,6 +11,8 @@ import { verifyCron } from "./middlewares/verify-cron";
 const app = new Hono();
 
 const factChcker = createFactChecker();
+const slackProvider = createSlackProvider();
+const twitterProvider = createTwitterProvider();
 
 app.get("/", (c) => c.text("Hello Hono!"));
 
@@ -30,7 +31,11 @@ async function checkAndNotify(tweetText: string, tweetUrl: string) {
 
   if (!check.ok) {
     // NG のときだけ即 Slack 通知
-    await notifySlack(check.answer, tweetText, tweetUrl);
+    await slackProvider.notify({
+      answer: check.answer,
+      tweet: tweetText,
+      tweetUrl: tweetUrl,
+    });
     return { notified: true, check };
   }
 
@@ -50,7 +55,7 @@ app.get("/test/slack", verifyCron, async (c) => {
 
     // NG が無かったらここで OK 通知を 1 回だけ送る
     if (!notified) {
-      await sendSlackMessage({
+      await slackProvider.sendMessage({
         text: "✅ ファクトチェックが必要なツイートはありませんでした",
       });
     }
@@ -67,6 +72,35 @@ app.get("/test/slack", verifyCron, async (c) => {
   }
 });
 
+// Twitter Provider テスト用エンドポイント
+// FYI localの動作確認用で一旦設置
+app.get("/test/twitter", async (c) => {
+  const query = c.req.query("q") || "";
+  const maxResults = Number(c.req.query("max_results")) || 10;
+
+  try {
+    const result = await twitterProvider.searchTweets({
+      query,
+      max_results: maxResults,
+    });
+
+    return c.json({
+      provider: process.env.ENV || "local",
+      query,
+      max_results: maxResults,
+      result,
+    });
+  } catch (error) {
+    return c.json(
+      {
+        error: error instanceof Error ? error.message : "Unknown error",
+        provider: process.env.ENV || "local",
+      },
+      500,
+    );
+  }
+});
+
 /* ------------------------------------------------------------ */
 /* 1. cron 用エンドポイント (Vercel / Cloudflare Cron でも OK)  */
 /* ------------------------------------------------------------ */
@@ -74,7 +108,7 @@ app.get("/cron/fetch", verifyCron, async (c) => {
   const query = buildSearchQuery();
 
   // Twitter 検索
-  const res = await twitter.v2.search(query, { max_results: 30 });
+  const res = await twitterProvider.searchTweets({ query, max_results: 30 });
 
   // ───────────────────────────────────────────
   // 並列でファクトチェック & NG 通知を実行
@@ -89,7 +123,7 @@ app.get("/cron/fetch", verifyCron, async (c) => {
 
   // NG が 1 件も無かったら OK 通知を 1 回だけ送信
   if (!hasNg) {
-    await sendSlackMessage({
+    await slackProvider.sendMessage({
       text: "✅ ファクトチェックが必要なツイートはありませんでした",
     });
   }
@@ -107,8 +141,8 @@ app.post("/slack/events", async (c) => {
       return c.json({ challenge: body.challenge });
     }
 
-    // Bolt へは body と ack を渡す
-    await slackApp.processEvent({
+    // Provider へは body と ack を渡す
+    await slackProvider.processEvent({
       body,
       ack: async () => {}, // 即時 ack
     });
@@ -134,8 +168,8 @@ app.post("/slack/actions", async (c) => {
   // ② JSON へ変換
   const payload = JSON.parse(raw);
 
-  // ③ Bolt へ委譲 — ack はレスポンスを返さず Promise<void>
-  await slackApp.processEvent({
+  // ③ Provider へ委譲 — ack はレスポンスを返さず Promise<void>
+  await slackProvider.processEvent({
     body: payload,
     ack: async () => {}, // 型：AckFn => Promise<void>
   });

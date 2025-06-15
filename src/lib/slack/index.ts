@@ -1,7 +1,19 @@
-// アクションハンドラーを先に登録（副作用 import）
-import "./actions";
-// app_mention などイベントハンドラー（↑で新規作成したファイル）
-import "./events";
+import { LocalSlackProvider } from "./local";
+import { SlackProvider } from "./slack";
+import type { BaseSlackProvider } from "./types";
 
-export { slack, slackApp } from "./client";
-export { notifySlack } from "./notifySlack";
+export function createSlackProvider(): BaseSlackProvider {
+  const env = process.env.ENV || "local";
+  const provider = ["prod", "dev"].includes(env) ? "slack" : "local";
+
+  switch (provider) {
+    case "slack":
+      return new SlackProvider();
+    case "local":
+      return new LocalSlackProvider();
+    default:
+      throw new Error(`Unknown slack provider: ${provider}`);
+  }
+}
+
+export type { BaseSlackProvider } from "./types";

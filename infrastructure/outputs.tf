@@ -10,7 +10,7 @@ output "app_name" {
 
 output "service_url" {
   description = "Cloud Run service URL"
-  value       = var.deploy_phase == "app" ? module.fact_checker_app[0].service_url : null
+  value       = module.fact_checker_app.service_url
 }
 
 output "region" {
@@ -34,9 +34,9 @@ output "resource_summary" {
     environment     = local.environment
     deploy_phase    = var.deploy_phase
     app_name       = local.app_name
-    service_url    = var.deploy_phase == "app" ? module.fact_checker_app[0].service_url : null
-    min_instances  = var.deploy_phase == "app" ? local.current_config.min_instances : null
-    max_instances  = var.deploy_phase == "app" ? local.current_config.max_instances : null
+    service_url    = module.fact_checker_app.service_url
+    min_instances  = local.current_config.min_instances
+    max_instances  = local.current_config.max_instances
     registry_repo  = google_artifact_registry_repository.fact-checker-repo.name
   }
 }

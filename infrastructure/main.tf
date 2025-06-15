@@ -61,7 +61,10 @@ module "secrets" {
 module "fact_checker_app" {
   source = "./modules/fact-checker-app"
   
-  depends_on = [module.secrets]  # Secretsの作成完了を待つ
+  depends_on = [
+    module.secrets,
+    google_secret_manager_secret_iam_member.secret-accessor
+  ]  # SecretsとIAM権限付与の完了を待つ
   
   app_name         = local.app_name
   region           = var.region

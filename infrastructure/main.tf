@@ -48,13 +48,13 @@ resource "google_artifact_registry_repository" "fact-checker-repo" {
   labels = local.common_labels
 }
 
-# Secret作成（サービスアカウント不要）
+# Secretsは全てappフェーズで作成（分割ワークフローと同じ）
 module "secrets" {
   count  = var.deploy_phase == "app" ? 1 : 0
   source = "./modules/secrets"
   
   environment            = local.environment
-  service_account_email  = ""  # 空文字でSecret作成のみ
+  service_account_email  = ""  # サービスアカウント作成前なので空文字
   secrets                = var.secrets
 }
 

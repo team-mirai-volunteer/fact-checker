@@ -193,19 +193,24 @@ TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
 
 ## 🔧 推奨アクション
 
-### 優先度: 高
-1. `versions.tf` の不適合コメント削除
-2. backend設定の説明統一
+### ✅ 優先度: 高（完了済み）
+1. ~~`versions.tf` の不適合コメント削除~~ ✅ 完了
+2. ~~backend設定の説明統一~~ ✅ 完了
 
-### 優先度: 中
-3. 英語コメントの日本語化
-4. リソース命名規則の統一
-5. ワークスペース名の環境別分離
+### ✅ 優先度: 中（完了済み）
+3. ~~英語コメントの日本語化~~ ✅ 完了
+4. ~~ワークフロー統合による保守性向上~~ ✅ 完了
 
-### 優先度: 低
-6. Provider バージョンの厳格化
-7. 追加ラベルの設定
-8. lifecycle ルールの追加
+### ✅ 優先度: 中（完了済み）
+5. ~~リソース命名規則の統一~~ ✅ 完了（全リソースでハイフン統一済み）
+
+### ⚠️ 優先度: 中（未対応・検討事項）
+6. ワークスペース名の環境別分離
+
+### 📋 優先度: 低（未対応・将来改善項目）
+7. Provider バージョンの厳格化
+8. 追加ラベルの設定
+9. lifecycle ルールの追加
 
 ---
 
@@ -217,10 +222,10 @@ TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
 
 | 項目 | ファイル | 修正内容 | ステータス |
 |------|---------|---------|-----------|
-| **重要問題** | `versions.tf` | 不適合コメント削除・正しいコメントに修正 | ✅ 今回修正 |
-| コメント統一 | `main.tf` | 英語コメント「Artifact Registry Repository」を日本語化 | ✅ 今回修正 |
-| コメント統一 | `backend.tf` | パスコメントを「Terraform Cloud バックエンド設定」に変更 | ✅ 今回修正 |
-| コメント統一 | `terraform-deploy.yml` | 「Organization名に変更」→「Terraform Cloud組織名」に修正 | ✅ 今回修正 |
+| **重要問題** | `versions.tf` | 不適合コメント削除・正しいコメントに修正 | ✅ 完了確認済み |
+| コメント統一 | `main.tf` | 英語コメント「Artifact Registry Repository」を日本語化 | ✅ 完了確認済み |
+| コメント統一 | `backend.tf` | パスコメントを「Terraform Cloud バックエンド設定」に変更 | ✅ 完了確認済み |
+| コメント統一 | ~~`terraform-deploy.yml`~~ → `deploy-integrated.yml` | 「Organization名に変更」→「Terraform Cloud組織名」に修正 | ✅ 統合ファイルで完了確認済み |
 
 ### ✅ 修正前から適切だった項目
 
@@ -259,7 +264,7 @@ TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
 + # Terraform Cloud バックエンド設定
 ```
 
-#### terraform-deploy.yml
+#### ~~terraform-deploy.yml~~ → deploy-integrated.yml（統合ファイル）
 ```diff
 - TF_CLOUD_ORGANIZATION: "fact-checker"  # Organization名に変更
 + TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
@@ -279,13 +284,131 @@ TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
 
 1. **設定矛盾の解消**: versions.tf と backend.tf の実装と説明が一致
 2. **日本語統一完了**: 全Terraformファイルのコメントが日本語で統一
-3. **明確性向上**: 不明確なコメントが具体的で分かりやすい表現に改善
+3. **明確性向上**: 不明確なコメントが具体的で分わかりやすい表現に改善
 4. **保守性向上**: 新しい開発者が理解しやすい構成に
 5. **品質維持**: 既に適切だった8項目の良好な状態を維持
+6. **ワークフロー統合完了**: 5つの個別ワークフローを1つの統合ワークフローに集約し、統合ファイル内でもレビュー推奨事項を適用済み
 
-**修正作業完了日**: 2025年6月14日
+**修正作業完了日**: 2025年6月14日  
+**統合・最終確認日**: 2025年6月15日
 
 ---
 
 **レビュー実施日**: 2025年6月14日  
 **レビュー対象**: terraform-deploy.yml および infrastructure/ 配下全ファイル
+
+---
+
+# GitHub Actions ワークフロー実行順序修正プラン
+
+## 現在の問題
+
+`.github/workflows/terraform-deploy.yml`において、初回実行時に以下の問題が発生する：
+
+1. `docker-build`ジョブでDocker imageをArtifact Registryの`fact-checker-repo`にpushしようとする
+2. しかし、`fact-checker-repo`はTerraform(`infrastructure/main.tf:42`)で作成される
+3. `terraform-apply`ジョブは`docker-build`の後に実行される
+4. **結果**: 初回実行時にArtifact Registryリポジトリが存在せず、Docker pushが失敗する
+
+## 必達事項
+
+### 1. インフラ優先デプロイフローの実現
+- Terraformでインフラストラクチャ（Artifact Registryリポジトリ含む）を先に作成
+- その後にDockerイメージのビルド・プッシュを実行
+
+### 2. 初回実行成功の保証
+- Artifact Registryリポジトリが存在しない状態でも正常に動作する実行フロー
+- 依存関係の適切な管理
+
+### 3. 段階的デプロイの維持
+- 現在の安全弁（`ENABLE_*`フラグ）を保持
+- 段階的な有効化が可能な構造を維持
+
+## 循環依存問題の詳細分析
+
+**実際の問題**: 単純な実行順序ではなく**循環依存**
+1. Terraform → Docker imageを参照してCloud Run作成 (`infrastructure/modules/fact-checker-app/main.tf:26`)
+2. Docker Build → Artifact Registryリポジトリが必要（Terraformで作成）
+
+**結果**: どちらを先に実行しても失敗する構造
+
+## 修正アプローチ（5つの選択肢）
+
+### Option A: 完全分離アプローチ
+**実装内容**: インフラとアプリを完全分離
+**問題**: Docker imageがないとCloud Run作成不可 → **不採用**
+
+### Option B: 条件付き実行アプローチ  
+**実装内容**: terraform-apply → docker-build → app-update
+**問題**: terraform-applyでCloud Run作成時にimageが必要 → **不採用**
+
+### Option C: 事前チェックアプローチ
+**実装内容**: Docker push前にリポジトリ作成
+**問題**: Terraformとの状態管理競合 → **不採用**
+
+### Option D: 段階的インフラ・アプリ分離アプローチ（推奨）
+
+**概要**: インフラを基盤とアプリに分離し、3段階でデプロイ
+
+**実装内容**:
+1. **Phase 1**: インフラ基盤作成
+   - Artifact Registryリポジトリ
+   - Secret Manager
+   - IAMロール・サービスアカウント
+2. **Phase 2**: Docker Build & Push
+   - Docker imageビルド・プッシュ（リポジトリ存在確認済み）
+3. **Phase 3**: アプリケーションデプロイ  
+   - Cloud Runサービス作成（imageが存在確認済み）
+
+**メリット**:
+- 循環依存を完全解決
+- 各段階で失敗点を特定可能
+- 段階的な安全弁設定
+
+**デメリット**:
+- 実行ステップが3段階に増加
+
+### Option E: Dummy Image戦略
+
+**概要**: 初回デプロイ時にダミーイメージでCloud Run作成後、実際のimageで更新
+
+**実装内容**:
+1. Terraformでダミーイメージ（`gcr.io/cloudrun/hello`）でCloud Run作成
+2. Docker imageビルド・プッシュ
+3. Cloud Runサービスを実際のimageで更新（Terraform再実行 or gcloud直接更新）
+
+**メリット**:
+- 循環依存を回避
+- 初回実行確実成功
+- 既存ワークフロー構造の大部分維持
+
+**デメリット**:
+- ダミーイメージ期間中のサービス動作不可
+- 更新手順が複雑
+
+## 推奨実装: Option D（段階的インフラ・アプリ分離）
+
+**理由**:
+1. **根本解決**: 循環依存を完全解決
+2. **安全性**: 各段階での確実な成功
+3. **明確性**: 各段階の責任が明確
+4. **運用性**: 段階的な問題特定が可能
+
+**実装ステップ**:
+1. `infrastructure-base-deploy.yml`作成（基盤インフラのみ）
+2. 既存`terraform-deploy.yml`修正（Docker Build追加）
+3. `app-deploy.yml`作成（Cloud Runデプロイ）
+4. 各ワークフローの安全弁・依存関係設定
+
+## 次のアクション
+
+1. **Option D**の詳細設計と実装
+2. 基盤インフラとアプリインフラの分離設計
+3. 各段階の安全弁フラグ設定
+4. テスト実行による動作確認
+
+---
+
+**緊急度**: High  
+**影響範囲**: CI/CDパイプライン全体  
+**作業工数**: 1-2日（設計・実装・テスト含む）

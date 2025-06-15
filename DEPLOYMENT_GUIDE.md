@@ -32,28 +32,27 @@ Phase 1: 基盤インフラ → Phase 2: Docker Build → Phase 3: アプリデ�
 ## デプロイフロー
 
 ### Phase 1: 基盤インフラストラクチャ
-**ワークフロー**: `infrastructure-base-deploy.yml`  
+**ワークフロー**: `deploy-integrated.yml` (infrastructure-base job)  
 **作成リソース**: 
 - Artifact Registryリポジトリ
 - 基盤となるGCPリソース
 
 **実行手順**:
-1. GitHub Actions Variables で `ENABLE_BASE_INFRASTRUCTURE=true` を設定
-2. ワークフローを実行
+1. GitHub Actions Variables で `ENABLE_INTEGRATED_DEPLOY=true` を設定
+2. 統合ワークフローを実行
 3. Terraform Cloud UIでApplyを実行
 
 ### Phase 2: Docker Build & Push
-**ワークフロー**: `docker-build-deploy.yml`  
+**ワークフロー**: `deploy-integrated.yml` (docker-build job)  
 **作成リソース**:
 - Docker image (SHA & latest tags)
 
 **実行手順**:
 1. Phase 1完了を確認
-2. GitHub Actions Variables で `ENABLE_DOCKER_BUILD=true` を設定  
-3. ワークフローを実行
+2. 統合ワークフローが自動的に実行される
 
 ### Phase 3: アプリケーションデプロイ
-**ワークフロー**: `app-deploy.yml`  
+**ワークフロー**: `deploy-integrated.yml` (application-deploy job)  
 **作成リソース**:
 - Cloud Runサービス
 - Secret Manager
@@ -62,10 +61,9 @@ Phase 1: 基盤インフラ → Phase 2: Docker Build → Phase 3: アプリデ�
 
 **実行手順**:
 1. Phase 1, 2完了を確認
-2. GitHub Actions Variables で `ENABLE_APP_DEPLOY=true` を設定
-3. 本番環境の場合は `ENABLE_PRODUCTION_DEPLOY=true` も設定
-4. ワークフローを実行
-5. Terraform Cloud UIでApplyを実行
+2. 本番環境の場合は `ENABLE_PRODUCTION_DEPLOY=true` も設定
+3. 統合ワークフローが自動的に実行される
+4. Terraform Cloud UIでApplyを実行
 
 ## GitHub Actions Variables設定
 
@@ -79,13 +77,6 @@ GitHub > Settings > Secrets and variables > Actions > Variables で設定:
 | `ENABLE_PRODUCTION_DEPLOY` | `true` | ⭐ 本番のみ | 本番環境デプロイ有効化 |
 | `ENABLE_RESOURCE_CHECK` | `true` | 🔍 推奨 | リソース監視ダッシュボード |
 
-### 分離版（個別実行用）
-
-| Variable | 値 | 必須レベル | 説明 |
-|----------|---|-----------|------|
-| `ENABLE_BASE_INFRASTRUCTURE` | `true` | 🔧 個別実行時 | Phase 1: 基盤インフラ有効化 |
-| `ENABLE_DOCKER_BUILD` | `true` | 🔧 個別実行時 | Phase 2: Docker Build有効化 |
-| `ENABLE_APP_DEPLOY` | `true` | 🔧 個別実行時 | Phase 3: アプリデプロイ有効化 |
 
 **設定方法**:
 1. GitHubリポジトリ → Settings
@@ -227,6 +218,117 @@ Phase 1は初回またはインフラ変更時のみ実行。
 | Variable | 用途 | 推奨値 |
 |----------|------|--------|
 | `ENABLE_RESOURCE_CHECK` | リソース状況確認を有効化 | `true` |
+
+## 🚀 リリースチェックリスト
+
+### 📋 事前準備チェック
+
+#### GitHub Secrets 確認
+以下のSecretsが設定済みか確認:
+
+- [ ] `GCLOUD_SERVICE_KEY` - GCP サービスアカウントキー
+- [ ] `PROJECT_ID` - GCP プロジェクトID
+- [ ] `TF_API_TOKEN` - Terraform Cloud APIトークン
+
+#### Terraform Cloud 確認
+- [ ] ワークスペース `fact-checker-fs` が存在
+- [ ] Auto-apply設定の確認（手動Applyの場合は無効）
+- [ ] Environment variables設定済み
+
+### 🔄 実行フロー確認
+
+#### Phase 1: 基盤インフラ チェックリスト
+**実行手順**:
+1. [ ] ワークフロー実行（手動またはpush）
+2. [ ] validateジョブ成功確認
+3. [ ] Terraform Cloud UIでPlan確認
+4. [ ] Terraform Cloud UIでApply実行
+5. [ ] Artifact Registryリポジトリ作成確認
+
+**成功条件**:
+- [ ] `terraform-apply` ジョブ成功
+- [ ] Phase 2が自動実行される
+
+#### Phase 2: Docker Build チェックリスト
+**自動実行条件**:
+- [ ] Phase 1の成功
+- [ ] `ENABLE_DOCKER_BUILD=true`
+
+**実行内容**:
+1. [ ] 前提条件チェック（Artifact Registry存在確認）
+2. [ ] Docker Build & Push
+3. [ ] リトライ機能動作確認
+
+**成功条件**:
+- [ ] Docker image push成功
+- [ ] Phase 3が自動実行される
+
+#### Phase 3: アプリデプロイ チェックリスト
+**自動実行条件**:
+- [ ] Phase 2の成功
+- [ ] `ENABLE_INTEGRATED_DEPLOY=true`
+- [ ] 本番: `ENABLE_PRODUCTION_DEPLOY=true`
+
+**実行手順**:
+1. [ ] 前提条件チェック（Docker image存在確認）
+2. [ ] Terraform Cloud UIでPlan確認
+3. [ ] Terraform Cloud UIでApply実行
+
+**成功条件**:
+- [ ] Cloud Runサービス起動
+- [ ] アプリケーション動作確認
+
+### 🔍 動作確認
+
+#### リソース確認コマンド
+```bash
+# Artifact Registry
+gcloud artifacts repositories list --location=asia-northeast1
+
+# Docker Images  
+gcloud container images list --repository=asia-northeast1-docker.pkg.dev/PROJECT_ID/fact-checker-repo
+
+# Cloud Run
+gcloud run services list --region=asia-northeast1
+
+# Secrets
+gcloud secrets list
+```
+
+#### アプリケーション動作確認
+- [ ] Cloud Runサービスアクセス可能
+- [ ] ヘルスチェックエンドポイント (`/`) 応答
+- [ ] 環境変数設定確認
+- [ ] Secret Manager連携確認
+
+### 🚨 トラブルシューティング チェックリスト
+
+#### Phase 1失敗時
+- [ ] GCP認証確認
+- [ ] Terraform Cloud接続確認
+- [ ] プロジェクト権限確認
+
+#### Phase 2失敗時
+- [ ] Phase 1完了確認
+- [ ] Artifact Registry権限確認
+- [ ] Docker Build権限確認
+
+#### Phase 3失敗時
+- [ ] Phase 1, 2完了確認  
+- [ ] Docker image存在確認
+- [ ] Cloud Run権限確認
+
+### ✅ リリース完了確認
+
+- [ ] 全3フェーズの成功実行
+- [ ] アプリケーション正常動作
+- [ ] 監視ダッシュボード機能確認
+- [ ] ドキュメント最終確認
+- [ ] チーム共有完了
+
+**リリース日**: _____年__月__日  
+**リリース担当者**: ________________  
+**確認者**: ________________
 
 ## ✨ ベストプラクティス実装内容
 

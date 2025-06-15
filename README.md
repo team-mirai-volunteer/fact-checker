@@ -145,7 +145,7 @@ gcloud scheduler jobs create http cron-fetch-tweets \
 ## 修正履歴・メモ
 
 ### 2025/6/10 GitHub Actions ワークフロー検証
-- terraform-deploy.yml の動作検証を実施
+- deploy-integrated.yml の統合ワークフロー実装完了
 - 発見した問題と修正:
   1. **policyサブモジュールエラー修正**
      - 問題: `policy/` ディレクトリがGitサブモジュール（160000モード）として誤登録

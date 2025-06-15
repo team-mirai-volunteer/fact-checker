@@ -8,7 +8,17 @@ resource "google_secret_manager_secret" "secrets" {
   }
 }
 
-# Secret値は手動でgcloudコマンドまたはGCP Consoleから設定済み
+# ダミー値で初期化（既存の値は上書きしない - 冪等性確保）
+resource "google_secret_manager_secret_version" "dummy_versions" {
+  for_each = var.secrets
+  
+  secret      = google_secret_manager_secret.secrets[each.key].id
+  secret_data = "CHANGE_ME_${each.key}"
+  
+  lifecycle {
+    ignore_changes = [secret_data]  # 既存値は上書きしない
+  }
+}
 
 # IAM権限付与はメインのmain.tfで実行
 # （サービスアカウント作成後に実行するため）

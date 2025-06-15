@@ -152,4 +152,19 @@ gcloud scheduler jobs create http cron-fetch-tweets \
 --update-headers "X-Cron-Secret=$CRON_SECRET"
 ```
 
+<!-- Test comment for workflow validation -->
+
+## 修正履歴・メモ
+
+### 2025/6/10 GitHub Actions ワークフロー検証
+- terraform-deploy.yml の動作検証を実施
+- 発見した問題と修正:
+  1. **policyサブモジュールエラー修正**
+     - 問題: `policy/` ディレクトリがGitサブモジュール（160000モード）として誤登録
+     - 症状: GitHub Actions で "fatal: No url found for submodule path 'policy' in .gitmodules" エラー
+     - 修正内容: 
+       - `git rm --cached policy` でサブモジュールエントリ削除
+       - `git add policy/` で通常ディレクトリとして再登録
+     - 修正日時: 2025/6/10
+
 

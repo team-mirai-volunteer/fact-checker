@@ -10,4 +10,8 @@ dist/
 # config
 config/
 
-dist/
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+*.tfstate*

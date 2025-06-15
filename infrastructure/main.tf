@@ -54,7 +54,7 @@ module "secrets" {
   source = "./modules/secrets"
   
   environment            = local.environment
-  service_account_email  = ""  # サービスアカウント作成前なので空文字
+  service_account_email  = module.fact_checker_app[0].service_account_email
   secrets                = var.secrets
 }
 

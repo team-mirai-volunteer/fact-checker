@@ -125,9 +125,9 @@ jobs:
 
   # Phase 2: Docker Build & Push
   docker-build:
-    needs: [infrastructure-base, infrastructure-apply]
+    needs: [infrastructure-base]
     runs-on: ubuntu-latest
-    if: vars.ENABLE_INTEGRATED_DEPLOY == 'true'
+    if: vars.ENABLE_INTEGRATED_DEPLOY == 'true' && (needs.infrastructure-base.result == 'success')
     outputs:
       app_name: ${{ steps.env.outputs.app_name }}
     

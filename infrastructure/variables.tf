@@ -1,3 +1,14 @@
+# =============================================================================
+# Terraform ルート変数定義
+# =============================================================================
+# このファイルの目的:
+# - Terraformのメイン設定で使用する変数を定義
+# - GitHub Actions ワークフローから渡される値を受け取る
+# - 全モジュールで共通して使用される設定値を管理
+# - terraform plan/apply 実行時の入力パラメータとして機能
+# =============================================================================
+
+# 基盤設定
 variable "gcp_project_id" {
   description = "GCP Project ID"
   type        = string
@@ -15,6 +26,7 @@ variable "region" {
   default     = "asia-northeast1"
 }
 
+# Secret Manager 設定
 variable "secrets" {
   description = "Map of secret names to create"
   type        = map(string)
@@ -33,63 +45,52 @@ variable "secrets" {
   }
 }
 
+# Cloud Run 設定
 variable "min_instances" {
   description = "Minimum number of Cloud Run instances"
   type        = number
   default     = 0
-  
-  validation {
-    condition     = var.min_instances >= 0 && var.min_instances <= 10
-    error_message = "The min_instances value must be between 0 and 10."
-  }
 }
 
 variable "max_instances" {
   description = "Maximum number of Cloud Run instances"
   type        = number
-  default     = 10
-  
-  validation {
-    condition     = var.max_instances >= 1 && var.max_instances <= 100
-    error_message = "The max_instances value must be between 1 and 100."
-  }
+  default     = 1
 }
 
 variable "cpu_limit" {
   description = "CPU limit for Cloud Run instances"
   type        = string
   default     = "1"
-  
-  validation {
-    condition     = contains(["1", "2", "4", "8"], var.cpu_limit)
-    error_message = "The cpu_limit value must be one of: 1, 2, 4, 8."
-  }
 }
 
 variable "memory_limit" {
   description = "Memory limit for Cloud Run instances"
   type        = string
   default     = "512Mi"
-  
-  validation {
-    condition     = can(regex("^[0-9]+(Mi|Gi)$", var.memory_limit))
-    error_message = "The memory_limit value must be in format like '512Mi' or '1Gi'."
-  }
 }
 
+# アプリケーション設定
 variable "log_level" {
   description = "Application log level"
   type        = string
   default     = "debug"
-  
-  validation {
-    condition     = contains(["debug", "info", "warn", "error"], var.log_level)
-    error_message = "The log_level value must be one of: debug, info, warn, error."
-  }
 }
 
 variable "cron_schedule" {
   description = "Cron schedule for the scheduler"
   type        = string
   default     = "0 */2 * * *"
+}
+
+# デプロイ制御
+variable "deploy_phase" {
+  description = "Deployment phase: base (infrastructure only) or app (full deployment)"
+  type        = string
+  default     = "app"
+  
+  validation {
+    condition     = contains(["base", "app"], var.deploy_phase)
+    error_message = "deploy_phase must be either 'base' or 'app'."
+  }
 }

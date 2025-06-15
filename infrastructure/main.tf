@@ -61,10 +61,7 @@ module "secrets" {
 module "fact_checker_app" {
   source = "./modules/fact-checker-app"
   
-  depends_on = [
-    module.secrets,
-    google_secret_manager_secret_iam_member.secret-accessor
-  ]  # SecretsとIAM権限付与の完了を待つ
+  depends_on = [module.secrets]  # Secretsの作成完了を待つ
   
   app_name         = local.app_name
   region           = var.region
@@ -91,16 +88,7 @@ module "fact_checker_app" {
   }
 }
 
-# IAM権限付与（サービスアカウント作成後）
-resource "google_secret_manager_secret_iam_member" "secret-accessor" {
-  for_each = var.secrets
-  
-  secret_id = module.secrets.secret_ids[each.key]
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${module.fact_checker_app.service_account_email}"
-  
-  depends_on = [module.fact_checker_app, module.secrets]
-}
+# IAM権限付与はfact-checker-appモジュール内で実行
 
 module "scheduler" {
   source = "./modules/scheduler"

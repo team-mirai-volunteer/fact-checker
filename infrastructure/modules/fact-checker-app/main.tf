@@ -7,6 +7,8 @@ resource "google_cloud_run_v2_service" "fact-checker" {
   name     = var.app_name
   location = var.region
   
+  depends_on = [google_secret_manager_secret_iam_member.secret-accessor]
+  
   labels = {
     environment = "staging"
     managed-by  = "terraform"
@@ -85,6 +87,17 @@ resource "google_cloud_run_v2_service" "fact-checker" {
     percent = 100
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
   }
+}
+
+# IAM権限付与（Service AccountにSecret Manager アクセス権限）
+resource "google_secret_manager_secret_iam_member" "secret-accessor" {
+  for_each = var.secret_env_vars
+  
+  secret_id = each.value
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud-run-sa.email}"
+  
+  depends_on = [google_service_account.cloud-run-sa]
 }
 
 resource "google_cloud_run_service_iam_member" "public-access" {

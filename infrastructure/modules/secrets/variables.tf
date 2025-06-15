@@ -9,9 +9,4 @@ variable "secrets" {
   type        = map(string)
 }
 
-variable "secret_values" {
-  description = "Map of secret names to their values (sensitive) - optional for manual setup"
-  type        = map(string)
-  default     = {}
-  sensitive   = true
-}
+# secret_values変数は不要（手動設定のため）

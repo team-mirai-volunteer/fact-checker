@@ -3,6 +3,14 @@ name: Integrated Deployment Pipeline
 on:
   push:
     branches: ['**']
+    paths:
+      - 'src/**'
+      - 'infrastructure/**'
+      - 'Dockerfile'
+      - 'package.json'
+      - 'bun.lock'
+      - 'tsconfig.json'
+      - '.github/workflows/deploy-integrated.yml'
   workflow_dispatch:
 
 permissions:

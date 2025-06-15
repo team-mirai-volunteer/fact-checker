@@ -20,6 +20,12 @@ This is a Twitter/X fact-checking bot that monitors posts about "チームみら
 
 ### Testing
 - `bun test` - Run tests using Bun's built-in test runner
+- `bun test src/__tests__/specific.test.ts` - Run a single test file
+
+### Build
+- `bun run build` - Build main application (includes typecheck)
+- `bun run build:scripts` - Build scripts only (for CLI tools)
+- `bun run typecheck` - Run TypeScript type checking only
 
 ## Architecture Overview
 
@@ -40,9 +46,15 @@ This is a Twitter/X fact-checking bot that monitors posts about "チームみら
    - Configurable keywords and filters in `src/lib/twitter_query/config.ts`
 
 3. **Slack Integration** (`src/lib/slack/`)
+   - Abstracted interface supporting multiple providers (Slack, local)
+   - Provider selection based on ENV variable:
+     - `ENV=prod` or `ENV=dev` → SlackProvider (実際のSlack API)
+     - Any other value → LocalSlackProvider (標準出力)
+   - Slack: Uses Slack Bolt framework with interactive buttons and mentions
+   - Local: Outputs to console for development
    - Sends notifications when misinformation is detected
-   - Supports interactive buttons for actions
-   - Uses Slack Bolt framework
+   - Supports interactive buttons for approve/post actions
+   - Handles app mentions for fact-checking requests
 
 4. **Web Server** (`src/index.ts`)
    - Built with Hono framework
@@ -58,15 +70,17 @@ All stored in `.env` file:
 #### Core System
 - `ENV` - Environment mode (`prod`, `dev`, or other values for local testing, defaults to `local`)
 
-#### OpenAI Provider (when using `openai`)
+#### OpenAI Provider (when ENV=prod/dev)
 - `OPENAI_API_KEY` - OpenAI API key
 - `VECTOR_STORE_ID` - OpenAI vector store ID (obtained after running `bun run upload`)
 
-#### External APIs
-- `X_BEARER_TOKEN` - Twitter/X API Bearer Token
+#### Slack Provider (when ENV=prod/dev)
 - `SLACK_BOT_TOKEN` - Slack Bot User OAuth Token
 - `SLACK_SIGNING_SECRET` - Slack Signing Secret
 - `SLACK_CHANNEL_ID` - Slack channel ID for notifications
+
+#### External APIs
+- `X_BEARER_TOKEN` - Twitter/X API Bearer Token
 - `CRON_SECRET` - Secret for authenticating cron requests
 
 ## Development Guidelines
@@ -75,6 +89,7 @@ All stored in `.env` file:
 - TypeScript with strict mode enabled
 - Biome for formatting: 2 spaces, double quotes
 - Pre-commit hooks run Biome checks automatically via Lefthook
+- Pre-push hooks run full build and script builds to ensure deployability
 
 ### Fact-Checking Logic
 The fact-checker has specific rules defined in `src/lib/fact-check.ts`:
@@ -86,6 +101,7 @@ The fact-checker has specific rules defined in `src/lib/fact-check.ts`:
 - Tests located in `src/__tests__/`
 - Use Bun's built-in test runner
 - Focus on unit testing query builders and core logic
+- パターンを繰り返すようなテストはtest.eachを使ってテストを書くこと
 - When using `test.each` with Bun, use array format for proper variable interpolation:
   ```typescript
   test.each([

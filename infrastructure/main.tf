@@ -53,9 +53,8 @@ module "secrets" {
   count  = var.deploy_phase == "app" ? 1 : 0
   source = "./modules/secrets"
   
-  environment            = local.environment
-  service_account_email  = module.fact_checker_app[0].service_account_email
-  secrets                = var.secrets
+  environment = local.environment
+  secrets     = var.secrets
 }
 
 # アプリケーションデプロイフェーズでのみ作成

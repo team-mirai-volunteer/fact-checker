@@ -1,0 +1,347 @@
+name: Integrated Deployment Pipeline
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  ENABLE_INTEGRATED_DEPLOY: false
+  ENABLE_PRODUCTION_DEPLOY: false
+  
+  REGION: asia-northeast1
+  TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
+
+jobs:
+  # Phase 1: 基盤インフラストラクチャ
+  infrastructure-base:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      branch_name: ${{ steps.env.outputs.branch_name }}
+      workspace_name: ${{ steps.env.outputs.workspace_name }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set Environment Variables
+        id: env
+        run: |
+          echo "environment=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")" >> $GITHUB_OUTPUT
+          echo "workspace_name=fact-checker-fs" >> $GITHUB_OUTPUT
+          echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          
+          echo "=== Phase 1: 基盤インフラ ==="
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Environment: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")"
+          echo "Workspace: fact-checker-fs"
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      
+      - name: Terraform Init
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
+        run: terraform init
+      
+      - name: Terraform Validate
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
+        run: |
+          echo "🔍 基盤インフラTerraform構文チェック実行"
+          terraform validate
+          echo "✅ 基盤インフラTerraform構文チェック成功"
+      
+      - name: Terraform Plan (Base Infrastructure)
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ steps.env.outputs.workspace_name }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
+          TF_VAR_deploy_phase: "base"
+        run: |
+          echo "🔍 基盤インフラTerraform Plan実行"
+          terraform plan -var="deploy_phase=base"
+          echo "✅ 基盤インフラTerraform Plan成功"
+
+  # Phase 1 Apply: 基盤インフラ作成
+  infrastructure-apply:
+    needs: infrastructure-base
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_INTEGRATED_DEPLOY == 'true'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          project_id: ${{ secrets.PROJECT_ID }}
+      
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      
+      - name: Terraform Init (Base Infrastructure Apply)
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ needs.infrastructure-base.outputs.workspace_name }}
+        run: |
+          echo "🚀 基盤インフラTerraform初期化中..."
+          terraform init
+          echo "✅ 基盤インフラTerraform初期化完了"
+      
+      - name: Terraform Plan (triggers Terraform Cloud for Base)
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ needs.infrastructure-base.outputs.workspace_name }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
+          TF_VAR_deploy_phase: "base"
+        run: |
+          echo "🚀 基盤インフラTerraform Plan実行でTerraform Cloudをトリガー"
+          terraform plan -var="deploy_phase=base"
+          echo "✅ 基盤インフラPlan完了 - Terraform Cloud UIでApply確認・実行してください"
+          echo ""
+          echo "📦 作成されるリソース:"
+          echo "- Artifact Registry リポジトリ (fact-checker-repo)"
+
+  # Phase 2: Docker Build & Push
+  docker-build:
+    needs: [infrastructure-base, infrastructure-apply]
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_INTEGRATED_DEPLOY == 'true'
+    outputs:
+      app_name: ${{ steps.env.outputs.app_name }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set Environment Variables
+        id: env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "app_name=x-fact-checker-prod" >> $GITHUB_OUTPUT
+          else
+            echo "app_name=x-fact-checker-staging" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "=== Phase 2: Docker Build ==="
+          echo "App Name: $([ "${{ github.ref }}" = "refs/heads/main" ] && echo "x-fact-checker-prod" || echo "x-fact-checker-staging")"
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          project_id: ${{ secrets.PROJECT_ID }}
+      
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Check Base Infrastructure Prerequisites
+        run: |
+          echo "🔍 基盤インフラ前提条件チェック実行中..."
+          
+          # Artifact Registryリポジトリの存在確認
+          if gcloud artifacts repositories describe fact-checker-repo \
+               --location=${{ env.REGION }} \
+               --project=${{ secrets.PROJECT_ID }} >/dev/null 2>&1; then
+            echo "✅ Artifact Registry リポジトリ (fact-checker-repo) 確認済み"
+          else
+            echo "❌ Artifact Registry リポジトリが見つかりません"
+            echo "📋 必要なアクション: Terraform Cloud UIで基盤インフラのApplyを実行してください"
+            exit 1
+          fi
+          
+          echo "🎉 すべての前提条件が満たされています"
+      
+      - name: Configure Docker for Artifact Registry
+        run: |
+          echo "🔧 Docker認証設定中..."
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+          echo "✅ Docker認証設定完了"
+      
+      - name: Build and Push Docker Image
+        env:
+          APP_NAME: ${{ steps.env.outputs.app_name }}
+        run: |
+          echo "🐳 Dockerイメージビルド開始"
+          IMAGE_SHA="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:${{ github.sha }}"
+          IMAGE_LATEST="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${{ env.APP_NAME }}:latest"
+          
+          echo "📦 ビルド対象イメージ:"
+          echo "  SHA tag: $IMAGE_SHA"
+          echo "  Latest tag: $IMAGE_LATEST"
+          
+          # Build and push with retry
+          RETRY_COUNT=0
+          MAX_RETRIES=3
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if gcloud builds submit --tag "$IMAGE_SHA" --quiet; then
+              echo "✅ Dockerイメージビルド成功: $IMAGE_SHA"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "⚠️ ビルド失敗 (試行 $RETRY_COUNT/$MAX_RETRIES)"
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "🔄 30秒後にリトライします..."
+                sleep 30
+              else
+                echo "❌ 最大リトライ回数に達しました。失敗"
+                exit 1
+              fi
+            fi
+          done
+          
+          # Tag as latest
+          gcloud container images add-tag "$IMAGE_SHA" "$IMAGE_LATEST" --quiet
+          echo "✅ latest タグ作成完了: $IMAGE_LATEST"
+
+  # Phase 3: アプリケーションデプロイ
+  application-deploy:
+    needs: [infrastructure-base, docker-build]
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_INTEGRATED_DEPLOY == 'true' && (github.ref != 'refs/heads/main' || vars.ENABLE_PRODUCTION_DEPLOY == 'true')
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          project_id: ${{ secrets.PROJECT_ID }}
+      
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Check Application Prerequisites
+        env:
+          APP_NAME: ${{ needs.docker-build.outputs.app_name }}
+        run: |
+          echo "🔍 アプリケーションデプロイ前提条件チェック実行中..."
+          echo "=== Phase 3: アプリケーションデプロイ ==="
+          
+          # Artifact Registryリポジトリの存在確認
+          if gcloud artifacts repositories describe fact-checker-repo \
+               --location=${{ env.REGION }} \
+               --project=${{ secrets.PROJECT_ID }} >/dev/null 2>&1; then
+            echo "✅ Artifact Registry リポジトリ (fact-checker-repo) 確認済み"
+          else
+            echo "❌ Artifact Registry リポジトリが見つかりません"
+            exit 1
+          fi
+          
+          # Docker imageの存在確認
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/fact-checker-repo/${APP_NAME}:latest"
+          if gcloud container images describe "$IMAGE_URL" >/dev/null 2>&1; then
+            echo "✅ Docker image 確認済み: $IMAGE_URL"
+          else
+            echo "❌ Docker image が見つかりません: $IMAGE_URL"
+            exit 1
+          fi
+          
+          echo "🎉 すべての前提条件が満たされています"
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      
+      - name: Terraform Init (Application Deploy)
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ needs.infrastructure-base.outputs.workspace_name }}
+        run: |
+          echo "🚀 アプリケーションTerraform初期化中..."
+          terraform init
+          echo "✅ アプリケーションTerraform初期化完了"
+      
+      - name: Terraform Plan (triggers Terraform Cloud for App)
+        working-directory: ./infrastructure
+        env:
+          TF_WORKSPACE: ${{ needs.infrastructure-base.outputs.workspace_name }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GCLOUD_SERVICE_KEY }}
+          GOOGLE_PROJECT: ${{ secrets.PROJECT_ID }}
+          TF_VAR_deploy_phase: "app"
+        run: |
+          echo "🚀 アプリケーションTerraform Plan実行でTerraform Cloudをトリガー"
+          terraform plan -var="deploy_phase=app"
+          echo "✅ アプリケーションPlan完了 - Terraform Cloud UIでApply確認・実行してください"
+          echo ""
+          echo "📦 作成されるリソース:"
+          echo "- Cloud Run サービス (${{ needs.docker-build.outputs.app_name }})"
+          echo "- Secret Manager シークレット" 
+          echo "- Cloud Scheduler ジョブ"
+          echo "- IAM ロール・ポリシー"
+
+  # 統合レポート
+  deployment-report:
+    needs: [infrastructure-base, infrastructure-apply, docker-build, application-deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Integrated Deployment Status Report
+        run: |
+          echo "=== 🚀 統合デプロイメントパイプライン完了レポート ==="
+          echo "実行日時: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo ""
+          
+          echo "=== 📊 各フェーズ実行結果 ==="
+          echo "Phase 1 (基盤インフラ検証): ${{ needs.infrastructure-base.result }}"
+          echo "Phase 1 (基盤インフラ適用): ${{ needs.infrastructure-apply.result }}"
+          echo "Phase 2 (Docker Build): ${{ needs.docker-build.result }}"
+          echo "Phase 3 (アプリデプロイ): ${{ needs.application-deploy.result }}"
+          echo ""
+          
+          echo "=== 🔧 安全弁設定状況 ==="
+          echo "ENABLE_INTEGRATED_DEPLOY: ${{ vars.ENABLE_INTEGRATED_DEPLOY }}"
+          echo "ENABLE_PRODUCTION_DEPLOY: ${{ vars.ENABLE_PRODUCTION_DEPLOY }}"
+          echo ""
+          
+          # 成功判定
+          if [[ "${{ needs.infrastructure-base.result }}" == "success" && 
+                "${{ needs.infrastructure-apply.result }}" == "success" && 
+                "${{ needs.docker-build.result }}" == "success" && 
+                "${{ needs.application-deploy.result }}" == "success" ]]; then
+            echo "🎉 全フェーズ成功！デプロイメント完了"
+          else
+            echo "⚠️ 一部フェーズで問題が発生しました"
+            echo ""
+            echo "📋 次のアクション:"
+            if [[ "${{ vars.ENABLE_INTEGRATED_DEPLOY }}" != "true" ]]; then
+              echo "1. ENABLE_INTEGRATED_DEPLOY=true を設定してデプロイを有効化"
+            fi
+            if [[ "${{ github.ref }}" == "refs/heads/main" && "${{ vars.ENABLE_PRODUCTION_DEPLOY }}" != "true" ]]; then
+              echo "2. ENABLE_PRODUCTION_DEPLOY=true を設定して本番デプロイを有効化"
+            fi
+            echo "3. 失敗したフェーズのログを確認"
+            echo "4. Terraform Cloud UIでApply状況を確認"
+          fi
+          
+          echo ""
+          echo "=== 🔗 有用なリンク ==="
+          echo "- Terraform Cloud: https://app.terraform.io/app/fact-checker/workspaces/fact-checker-fs"
+          echo "- GitHub Actions: https://github.com/${{ github.repository }}/actions"

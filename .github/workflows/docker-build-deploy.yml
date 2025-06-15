@@ -1,13 +1,13 @@
 name: Docker Build & Deploy
 
 on:
-  push:
-    branches: ['**']
-  workflow_dispatch:
-  workflow_run:
-    workflows: ["Deploy Base Infrastructure"]
-    types: [completed]
-    branches: ['**']
+  # push:
+  #   branches: ['**']  # 統合版 deploy-integrated.yml に移行のため無効化
+  workflow_dispatch:  # 緊急時の個別実行用
+  # workflow_run:
+  #   workflows: ["Deploy Base Infrastructure"]
+  #   types: [completed]
+  #   branches: ['**']  # 統合版では needs で制御
 
 permissions:
   contents: read

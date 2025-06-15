@@ -10,20 +10,24 @@
 
 **解決策**: 段階的デプロイフロー
 
-## 自動化されたデプロイフロー
+## 🚀 統合デプロイフロー
 
-### 🚀 ワークフロー間の依存関係
+### 統一ワークフロー
 
-各フェーズは自動的に前フェーズの完了を待ちます：
+**ファイル**: `deploy-integrated.yml`  
+**特徴**: 1つのファイルで全フロー可視化
 
 ```
-Phase 1 (成功) → Phase 2 (自動実行) → Phase 3 (自動実行)
+Phase 1: 基盤インフラ → Phase 2: Docker Build → Phase 3: アプリデプロイ
+    ↓                       ↓                      ↓
+[Artifact Registry]    [Docker Image]      [Cloud Run + α]
 ```
 
 **実装方法**:
-- `workflow_run` トリガーによる自動実行
+- `needs` による確実な順次実行
 - 前提条件の自動チェック（リソース存在確認）
 - リトライ機能付きエラーハンドリング
+- 統合レポートによる全体状況表示
 
 ## デプロイフロー
 
@@ -67,13 +71,21 @@ Phase 1 (成功) → Phase 2 (自動実行) → Phase 3 (自動実行)
 
 GitHub > Settings > Secrets and variables > Actions > Variables で設定:
 
+### 統合版（推奨）
+
 | Variable | 値 | 必須レベル | 説明 |
 |----------|---|-----------|------|
-| `ENABLE_BASE_INFRASTRUCTURE` | `true` | ✅ 必須 | Phase 1: 基盤インフラ有効化 |
-| `ENABLE_DOCKER_BUILD` | `true` | ✅ 必須 | Phase 2: Docker Build有効化 |
-| `ENABLE_APP_DEPLOY` | `true` | ✅ 必須 | Phase 3: アプリデプロイ有効化 |
+| `ENABLE_INTEGRATED_DEPLOY` | `true` | ✅ 必須 | 統合デプロイ全体有効化 |
 | `ENABLE_PRODUCTION_DEPLOY` | `true` | ⭐ 本番のみ | 本番環境デプロイ有効化 |
 | `ENABLE_RESOURCE_CHECK` | `true` | 🔍 推奨 | リソース監視ダッシュボード |
+
+### 分離版（個別実行用）
+
+| Variable | 値 | 必須レベル | 説明 |
+|----------|---|-----------|------|
+| `ENABLE_BASE_INFRASTRUCTURE` | `true` | 🔧 個別実行時 | Phase 1: 基盤インフラ有効化 |
+| `ENABLE_DOCKER_BUILD` | `true` | 🔧 個別実行時 | Phase 2: Docker Build有効化 |
+| `ENABLE_APP_DEPLOY` | `true` | 🔧 個別実行時 | Phase 3: アプリデプロイ有効化 |
 
 **設定方法**:
 1. GitHubリポジトリ → Settings
@@ -91,33 +103,38 @@ Terraformコードは `deploy_phase` 変数で制御:
 - `base`: 基盤インフラのみ（Artifact Registry等）
 - `app`: 全リソース（Cloud Run, Secrets等）
 
-## 🎯 初回セットアップ手順（自動化版）
+## 🎯 初回セットアップ手順（統合版）
 
-### ステップ1: 安全弁フラグを一括設定
-GitHub Actions Variables を一度に設定:
+### ステップ1: 安全弁フラグを設定
+GitHub Actions Variables を設定:
 ```bash
-ENABLE_BASE_INFRASTRUCTURE=true
-ENABLE_DOCKER_BUILD=true  
-ENABLE_APP_DEPLOY=true
+# 統合版（推奨）
+ENABLE_INTEGRATED_DEPLOY=true
 ENABLE_PRODUCTION_DEPLOY=true  # 本番環境の場合のみ
 ```
 
-### ステップ2: 最初のワークフローを実行
-1. `infrastructure-base-deploy.yml` を実行（手動またはコミット）
-2. Terraform Cloud UI で Apply を実行
-3. 成功後、`docker-build-deploy.yml` が**自動実行**
-4. 成功後、`app-deploy.yml` が**自動実行**
-5. Terraform Cloud UI で最終 Apply を実行
+### ステップ2: 統合ワークフローを実行
+1. `deploy-integrated.yml` を実行（手動またはコミット）
+2. **Phase 1**: 基盤インフラ Plan → Terraform Cloud UI で Apply 実行
+3. **Phase 2**: Docker Build 自動実行（Phase 1成功後）
+4. **Phase 3**: アプリデプロイ Plan → Terraform Cloud UI で Apply 実行
+5. **Report**: 全体結果の統合レポート表示
 
-### 自動実行の流れ
+### 統合実行の流れ
 ```
-Phase 1 Manual/Push → Phase 2 Auto → Phase 3 Auto
-     ↓                    ↓              ↓
-[基盤インフラ作成] → [Docker Build] → [アプリデプロイ]
+deploy-integrated.yml 実行
+         ↓
+Phase 1 → Phase 2 → Phase 3 → Report
+  ↓         ↓         ↓         ↓
+[基盤]  [Docker]  [アプリ]  [レポート]
 ```
 
-**前提条件チェック**: 各フェーズで自動的にリソース存在確認
-**エラーハンドリング**: 失敗時の自動リトライ（最大3回）
+**特徴**:
+- ✅ **1ファイルで全体把握**: フロー全体が見渡せる
+- ✅ **確実な順次実行**: needs による依存関係制御
+- ✅ **統合レポート**: 全フェーズの実行結果を一覧表示
+- ✅ **前提条件チェック**: 各フェーズで自動リソース確認
+- ✅ **エラーハンドリング**: 失敗時の自動リトライ（最大3回）
 
 ## 🎬 実行例
 

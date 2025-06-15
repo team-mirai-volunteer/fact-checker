@@ -1,11 +1,14 @@
-# ⚠️ DEPRECATED: このワークフローは段階的デプロイに置き換えられました
+# ⚠️ DEPRECATED: このワークフローは統合デプロイに置き換えられました
 # 
 # 新しいワークフロー:
+# → deploy-integrated.yml (推奨: 1ファイルで全フェーズ統合)
+#
+# 個別実行が必要な場合:
 # 1. infrastructure-base-deploy.yml (基盤インフラ)
 # 2. docker-build-deploy.yml (Docker Build & Push)  
 # 3. app-deploy.yml (アプリケーション)
 #
-# 循環依存問題を解決するため、上記の順序で実行してください。
+# Variables設定: ENABLE_INTEGRATED_DEPLOY=true
 # このファイルは後方互換性のために残されていますが、推奨しません。
 
 name: Deploy Infrastructure (DEPRECATED)

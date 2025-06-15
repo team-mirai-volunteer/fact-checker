@@ -1,9 +1,9 @@
 name: Deploy Base Infrastructure
 
 on:
-  push:
-    branches: ['**']
-  workflow_dispatch:
+  # push:
+  #   branches: ['**']  # 統合版 deploy-integrated.yml に移行のため無効化
+  workflow_dispatch:  # 緊急時の個別実行用
 
 permissions:
   contents: read

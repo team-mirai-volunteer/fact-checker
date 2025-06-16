@@ -54,15 +54,6 @@ jobs:
           WORKSPACE_SUFFIX=$([ "$ENVIRONMENT" = "production" ] && echo "production" || echo "fs")
           WORKSPACE_NAME="${TF_WORKSPACE:-${{ env.WORKSPACE_BASE }}-$WORKSPACE_SUFFIX}"
           
-          # セキュリティ設定（本番環境では制限的に、staging環境では開発用に設定）
-          if [ "$ENVIRONMENT" = "production" ]; then
-            export TF_VAR_cloud_run_ingress="internal"
-            export TF_VAR_enable_public_access="false"
-          else
-            export TF_VAR_cloud_run_ingress="all"
-            export TF_VAR_enable_public_access="true"
-          fi
-          
           # GitHub Outputに設定
           echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
           echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT

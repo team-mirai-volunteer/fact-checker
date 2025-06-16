@@ -54,6 +54,15 @@ jobs:
           WORKSPACE_SUFFIX=$([ "$ENVIRONMENT" = "production" ] && echo "production" || echo "fs")
           WORKSPACE_NAME="${TF_WORKSPACE:-${{ env.WORKSPACE_BASE }}-$WORKSPACE_SUFFIX}"
           
+          # セキュリティ設定（本番環境では制限的に、staging環境では開発用に設定）
+          if [ "$ENVIRONMENT" = "production" ]; then
+            export TF_VAR_cloud_run_ingress="internal"
+            export TF_VAR_enable_public_access="false"
+          else
+            export TF_VAR_cloud_run_ingress="all"
+            export TF_VAR_enable_public_access="true"
+          fi
+          
           # GitHub Outputに設定
           echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
           echo "branch_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
@@ -195,8 +204,10 @@ jobs:
                --project=${{ secrets.PROJECT_ID }} >/dev/null 2>&1; then
             echo "✅ Artifact Registry リポジトリ (${{ env.ARTIFACT_REPO_BASE }}) 確認済み"
           else
-            echo "❌ Artifact Registry リポジトリが見つかりません"
-            echo "📋 必要なアクション: Terraform Cloud UIで基盤インフラのApplyを実行してください"
+            echo "❌ Artifact Registry リポジトリが見つかりません: ${{ env.ARTIFACT_REPO_BASE }}"
+            echo "📋 必要なアクション:"
+            echo "  1. Terraform Cloud UI: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ needs.infrastructure-base.outputs.workspace_name }}"
+            echo "  2. 基盤インフラのApplyを実行"
             exit 1
           fi
           

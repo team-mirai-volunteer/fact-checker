@@ -93,6 +93,8 @@ module "fact_checker_app" {
 module "scheduler" {
   source = "./modules/scheduler"
   
+  depends_on = [module.secrets, module.fact_checker_app]
+  
   app_name        = local.app_name
   region          = var.region
   service_url     = module.fact_checker_app.service_url

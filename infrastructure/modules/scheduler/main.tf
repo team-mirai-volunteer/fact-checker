@@ -1,16 +1,16 @@
-resource "google_service_account" "scheduler_sa" {
-  account_id   = "${var.app_name}-scheduler-sa"
+resource "google_service_account" "scheduler-sa" {
+  account_id   = "${var.app_name}-cron-sa"
   display_name = "Service Account for ${var.app_name} Scheduler"
 }
 
-resource "google_cloud_run_service_iam_member" "scheduler_invoker" {
+resource "google_cloud_run_service_iam_member" "scheduler-invoker" {
   service  = var.service_name
   location = var.region
   role     = "roles/run.invoker"
-  member   = "serviceAccount:${google_service_account.scheduler_sa.email}"
+  member   = "serviceAccount:${google_service_account.scheduler-sa.email}"
 }
 
-resource "google_cloud_scheduler_job" "fact_checker_cron" {
+resource "google_cloud_scheduler_job" "fact-checker-cron" {
   name             = "${var.app_name}-cron"
   description      = "Scheduled fact checking job for ${var.app_name}"
   schedule         = var.schedule
@@ -30,7 +30,7 @@ resource "google_cloud_scheduler_job" "fact_checker_cron" {
     }
     
     oidc_token {
-      service_account_email = google_service_account.scheduler_sa.email
+      service_account_email = google_service_account.scheduler-sa.email
     }
   }
 }

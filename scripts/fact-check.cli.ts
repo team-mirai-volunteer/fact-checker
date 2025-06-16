@@ -11,12 +11,8 @@ async function main() {
   }
 
   try {
-    const factChecker = await createFactChecker();
-    const vectorStoreId = process.env.VECTOR_STORE_ID || "default";
-    const { ok, answer } = await factChecker.factCheck(
-      statement,
-      vectorStoreId,
-    );
+    const factChecker = createFactChecker();
+    const { ok, answer } = await factChecker.factCheck(statement);
 
     console.log("\n=== ファクトチェック回答 =================");
     console.log(answer);

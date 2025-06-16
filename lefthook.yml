@@ -3,3 +3,10 @@ pre-commit:
     check:
       run: bun run biome:check:write
       stage_fixed: true
+
+pre-push:
+  commands:
+    build:
+      run: bun run build
+    build-scripts:
+      run: bun run build:scripts

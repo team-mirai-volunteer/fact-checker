@@ -11,7 +11,5 @@ export function createFactChecker(): FactChcker {
       return createOpenAIFactChcker();
     case "local":
       return createLocalFactChecker();
-    default:
-      throw new Error(`Unknown fact checker provider: ${provider}`);
   }
 }

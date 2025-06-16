@@ -38,16 +38,29 @@ provider "google" {
   region  = var.region
 }
 
+# Docker イメージ用 Artifact Registry リポジトリ
+resource "google_artifact_registry_repository" "fact-checker-repo" {
+  location      = var.region
+  repository_id = "fact-checker-repo"
+  description   = "Fact Checker Docker Repository"
+  format        = "DOCKER"
+
+  labels = local.common_labels
+}
+
+# Secrets作成
 module "secrets" {
   source = "./modules/secrets"
   
-  environment            = local.environment
-  service_account_email  = module.fact_checker_app.service_account_email
-  secrets                = var.secrets
+  environment = local.environment
+  secrets     = var.secrets
 }
 
+# アプリケーション作成
 module "fact_checker_app" {
   source = "./modules/fact-checker-app"
+  
+  depends_on = [module.secrets]  # Secretsの作成完了を待つ
   
   app_name         = local.app_name
   region           = var.region
@@ -56,6 +69,9 @@ module "fact_checker_app" {
   max_instances    = local.current_config.max_instances
   cpu_limit        = local.current_config.cpu_limit
   memory_limit     = local.current_config.memory_limit
+  env_vars = {
+    ENV = local.environment == "production" ? "prod" : "dev"
+  }
   secret_env_vars  = {
     OPENAI_API_KEY      = module.secrets.secret_versions["openai-api-key"]
     VECTOR_STORE_ID     = module.secrets.secret_versions["vector-store-id"]
@@ -70,6 +86,8 @@ module "fact_checker_app" {
     CRON_SECRET         = module.secrets.secret_versions["cron-secret"]
   }
 }
+
+# IAM権限付与はfact-checker-appモジュール内で実行
 
 module "scheduler" {
   source = "./modules/scheduler"

@@ -199,6 +199,10 @@ jobs:
             echo "📋 必要なアクション:"
             echo "  1. Terraform Cloud UI: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ needs.infrastructure-base.outputs.workspace_name }}"
             echo "  2. 基盤インフラのApplyを実行"
+            echo "📍 詳細情報:"
+            echo "  - プロジェクト: ${{ secrets.PROJECT_ID }}"
+            echo "  - リージョン: ${{ env.REGION }}"
+            echo "  - リポジトリ名: ${{ env.ARTIFACT_REPO_BASE }}"
             exit 1
           fi
           

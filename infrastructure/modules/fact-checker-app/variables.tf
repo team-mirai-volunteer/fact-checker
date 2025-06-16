@@ -9,6 +9,11 @@
 # =============================================================================
 
 # Cloud Run サービス設定
+variable "environment" {
+  description = "Environment name (production or staging)"
+  type        = string
+}
+
 variable "app_name" {
   description = "Application name"
   type        = string

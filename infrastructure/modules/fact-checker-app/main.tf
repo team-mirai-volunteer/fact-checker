@@ -10,7 +10,7 @@ resource "google_cloud_run_v2_service" "fact-checker" {
   depends_on = [google_secret_manager_secret_iam_member.secret-accessor]
   
   labels = {
-    environment = "staging"
+    environment = var.environment
     managed-by  = "terraform"
     version     = "v1-2"
     team        = "mirai"

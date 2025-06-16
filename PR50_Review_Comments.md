@@ -31,7 +31,7 @@ CI実行時に「Required token could not be found」エラーが発生
 
 ## 2. ハードコード値の修正
 
-### 2.1 環境ラベルのハードコード
+### 2.1 ✅【対応完了】環境ラベルのハードコード
 
 #### ファイル
 `infrastructure/modules/fact-checker-app/main.tf`
@@ -82,6 +82,11 @@ labels = {
 }
 ```
 
+**✅ 対応完了（2025-06-16）**: 
+- `infrastructure/modules/fact-checker-app/variables.tf:12-15` - environment変数を追加
+- `infrastructure/main.tf:65` - モジュール呼び出しにenvironment変数を追加
+- `infrastructure/modules/fact-checker-app/main.tf:13` - ラベル設定を`var.environment`に修正
+
 ---
 
 ## 3. ワークスペース命名の一貫性
@@ -118,7 +123,7 @@ WORKSPACE_SUFFIX=$([ "$ENVIRONMENT" = "production" ] && echo "production" || ech
 
 ## 4. 変数定義の追加
 
-### 4.1 📝【2.1に包含】environment変数の未定義
+### 4.1 ✅【対応完了 - 2.1に包含】environment変数の未定義
 
 #### ファイル
 `infrastructure/modules/fact-checker-app/variables.tf`
@@ -137,8 +142,8 @@ variable "environment" {
 }
 ```
 
-**📝 関連性確認（2025-06-16）**: 
-2.1の環境ラベルハードコード修正が実装された場合、この4.1の指摘は同時に解決されます。2.1の実装ステップ1で同じ変数定義を追加するため、4.1は2.1に包含される改善項目です。
+**✅ 対応完了（2025-06-16）**: 
+2.1の環境ラベルハードコード修正の実装により同時に解決されました。`infrastructure/modules/fact-checker-app/variables.tf:12-15`でenvironment変数定義を追加済み。
 
 ---
 
@@ -211,7 +216,7 @@ Slack → VPC内部ネットワーク → Cloud Run → アプリケーション
 
 ## 6. エラーハンドリングの改善
 
-### 6.1 前提条件チェックのエラーメッセージ改善
+### 6.1 ✅【対応完了】前提条件チェックのエラーメッセージ改善
 
 #### ファイル
 `.github/workflows/deploy-integrated.yml`
@@ -243,6 +248,9 @@ else
   exit 1
 fi
 ```
+
+**✅ 対応完了（2025-06-16）**: 
+`.github/workflows/deploy-integrated.yml:202-205` - エラーメッセージに詳細情報（プロジェクト、リージョン、リポジトリ名）を追加し、トラブルシューティングを改善しました。
 
 ---
 
@@ -347,15 +355,30 @@ module "scheduler" {
 
 ## 優先度
 
-**高**: ~~1.1✅~~, 2.1, ~~4.1📝~~ (~~CI失敗の解決✅~~、ハードコード修正、~~変数定義📝~~)
-**中**: ~~3.1✅~~, 6.1, ~~8.1✅~~ (~~命名一貫性✅~~、エラーメッセージ、~~ドキュメント✅~~)
+**高**: ~~1.1✅~~, ~~2.1✅~~, ~~4.1✅~~ (~~CI失敗の解決✅~~、~~ハードコード修正✅~~、~~変数定義✅~~)
+**中**: ~~3.1✅~~, ~~6.1✅~~, ~~8.1✅~~ (~~命名一貫性✅~~、~~エラーメッセージ✅~~、~~ドキュメント✅~~)
 **低**: 5.1, 7.1 (セキュリティ検討、設定値調整)
 
 **注記**: 
 - 1.1✅は意図的な安全弁制御のため対応不要（対応済み）
-- 4.1📝は2.1の実装に包含されるため、2.1対応時に同時解決
+- 2.1✅は対応完了（environment変数追加とラベル動的設定）
+- 4.1✅は2.1の実装に包含され同時解決（対応済み）
 - 3.1✅は対応完了（コミット01d7d81でコメント更新）
+- 6.1✅は対応完了（エラーメッセージに詳細情報を追加）
 - 8.1✅は対応完了（DEPLOYMENT_GUIDE.mdの記載を確認済み）
+
+## 残件一覧
+
+### 低優先度（2件）
+- **5.1** セキュリティ設定の検討 - Cloud Runサービスの公開アクセス設定
+  - ファイル: `infrastructure/modules/fact-checker-app/main.tf:103-108`
+  - 内容: 現在の`allUsers`設定から`internal` ingress設定への変更検討
+
+- **7.1** 設定値の検証 - deploy_phase変数のデフォルト値
+  - ファイル: `infrastructure/variables.tf:87-96`
+  - 内容: 機能的に意味をなしていない`deploy_phase`変数の完全削除
+
+**残件合計: 2件**（低2件）
 
 ## 総評
 

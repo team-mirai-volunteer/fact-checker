@@ -62,6 +62,7 @@ module "fact_checker_app" {
   
   depends_on = [module.secrets]  # Secretsの作成完了を待つ
   
+  environment      = local.environment
   app_name         = local.app_name
   region           = var.region
   container_image  = "${var.region}-docker.pkg.dev/${var.gcp_project_id}/fact-checker-repo/${local.app_name}:latest"

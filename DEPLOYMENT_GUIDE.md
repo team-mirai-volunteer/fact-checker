@@ -26,6 +26,17 @@ Phase 1: 基盤インフラ → Phase 2: Docker Build → Phase 3: アプリデ�
 - GitHub Actions設定権限
 - Terraform Cloud アカウント
 
+## セキュリティ設定
+
+### Cloud Run アクセス制御オプション
+
+本システムでは2つのセキュリティレベルを選択できます：
+
+1. **公開アクセス（デフォルト）**: インターネットからの直接アクセスを許可
+2. **内部ネットワークのみ**: VPCネットワーク内およびGoogle Cloudサービスからのみアクセス可能
+
+詳細は[SECURITY_CONFIGURATION.md](./SECURITY_CONFIGURATION.md)を参照してください。
+
 ---
 
 ## 2. 🚀 クイックスタート
@@ -180,8 +191,10 @@ Secret Managerのシークレットキー（名前）は、Terraformによって
 
 #### ワークスペース設定
 
-- **ワークスペース名**: `fact-checker-fs`（動作検証で一旦使用中）
-  > **注意**: 本番運用時は適切なワークスペース名に変更することを推奨
+- **ワークスペース名**: 
+  - staging: `fact-checker-fs`（動作検証で一旦使用中）
+  - production: `fact-checker-production`
+  > **注意**: staging環境のワークスペース名は今後`fact-checker-staging`に変更予定
 - **実行方法**: 手動Apply
 - **VCS連携**: GitHubリポジトリと連携
 

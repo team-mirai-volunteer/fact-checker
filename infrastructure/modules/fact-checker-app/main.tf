@@ -1,14 +1,23 @@
-resource "google_service_account" "cloud_run_sa" {
+resource "google_service_account" "cloud-run-sa" {
   account_id   = "${var.app_name}-sa"
   display_name = "Service Account for ${var.app_name}"
 }
 
-resource "google_cloud_run_v2_service" "fact_checker" {
+resource "google_cloud_run_v2_service" "fact-checker" {
   name     = var.app_name
   location = var.region
   
+  depends_on = [google_secret_manager_secret_iam_member.secret-accessor]
+  
+  labels = {
+    environment = "staging"
+    managed-by  = "terraform"
+    version     = "v1-2"
+    team        = "mirai"
+  }
+  
   template {
-    service_account = google_service_account.cloud_run_sa.email
+    service_account = google_service_account.cloud-run-sa.email
     
     scaling {
       min_instance_count = var.min_instances
@@ -25,9 +34,12 @@ resource "google_cloud_run_v2_service" "fact_checker" {
         }
       }
       
-      env {
-        name  = "PORT"
-        value = "8080"
+      dynamic "env" {
+        for_each = var.env_vars
+        content {
+          name  = env.key
+          value = env.value
+        }
       }
       
       dynamic "env" {
@@ -77,9 +89,20 @@ resource "google_cloud_run_v2_service" "fact_checker" {
   }
 }
 
-resource "google_cloud_run_service_iam_member" "public_access" {
-  service  = google_cloud_run_v2_service.fact_checker.name
-  location = google_cloud_run_v2_service.fact_checker.location
+# IAM権限付与（Service AccountにSecret Manager アクセス権限）
+resource "google_secret_manager_secret_iam_member" "secret-accessor" {
+  for_each = var.secret_env_vars
+  
+  secret_id = each.value
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud-run-sa.email}"
+  
+  depends_on = [google_service_account.cloud-run-sa]
+}
+
+resource "google_cloud_run_service_iam_member" "public-access" {
+  service  = google_cloud_run_v2_service.fact-checker.name
+  location = google_cloud_run_v2_service.fact-checker.location
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

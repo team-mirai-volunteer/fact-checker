@@ -50,7 +50,7 @@ jobs:
           
           # ENV使って各種名称生成
           APP_NAME="${{ env.APP_NAME_BASE }}-$ENVIRONMENT"
-          # TODO: staging環境は当面 fs で設定、今後 staging に変更予定
+          # TODO: terraform cloudの実証確認のため、一旦fs workspaceにおいて作業中。確認が終わったらstagingに戻すこと
           WORKSPACE_SUFFIX=$([ "$ENVIRONMENT" = "production" ] && echo "production" || echo "fs")
           WORKSPACE_NAME="${TF_WORKSPACE:-${{ env.WORKSPACE_BASE }}-$WORKSPACE_SUFFIX}"
           

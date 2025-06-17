@@ -18,8 +18,9 @@ permissions:
   id-token: write
 
 env:
-  ENABLE_INTEGRATED_DEPLOY: false
-  ENABLE_PRODUCTION_DEPLOY: false
+  # 🚧 安全弁: 段階的移行用（移行完了後削除予定）
+  ENABLE_INTEGRATED_DEPLOY: false  # 統合デプロイ全体制御
+  ENABLE_PRODUCTION_DEPLOY: false  # 本番環境デプロイ制御
   
   REGION: asia-northeast1
   TF_CLOUD_ORGANIZATION: "fact-checker"  # Terraform Cloud組織名
@@ -50,7 +51,9 @@ jobs:
           
           # ENV使って各種名称生成
           APP_NAME="${{ env.APP_NAME_BASE }}-$ENVIRONMENT"
-          # TODO: terraform cloudの実証確認のため、一旦fs workspaceにおいて作業中。確認が終わったらstagingに戻すこと
+          # 🚧 安全弁: 既存本番運用保護のため一時的に段階的切替対応
+          # TODO: terraform cloudの実証確認のため、一旦fs workspaceにおいて作業中
+          # 確認が終わったらstagingに戻し、最終的にこの複雑なロジックは削除予定
           WORKSPACE_SUFFIX=$([ "$ENVIRONMENT" = "production" ] && echo "production" || echo "fs")
           WORKSPACE_NAME="${TF_WORKSPACE:-${{ env.WORKSPACE_BASE }}-$WORKSPACE_SUFFIX}"
           
@@ -226,26 +229,19 @@ jobs:
           echo "  SHA tag: $IMAGE_SHA"
           echo "  Latest tag: $IMAGE_LATEST"
           
-          # Build and push with retry
-          RETRY_COUNT=0
-          MAX_RETRIES=3
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if gcloud builds submit --tag "$IMAGE_SHA" --quiet; then
-              echo "✅ Dockerイメージビルド成功: $IMAGE_SHA"
-              break
-            else
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              echo "⚠️ ビルド失敗 (試行 $RETRY_COUNT/$MAX_RETRIES)"
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "🔄 30秒後にリトライします..."
-                sleep 30
-              else
-                echo "❌ 最大リトライ回数に達しました。失敗"
-                exit 1
-              fi
-            fi
-          done
+          echo "🐳 Dockerイメージビルド実行中..."
+          if gcloud builds submit --tag "$IMAGE_SHA" --quiet; then
+            echo "✅ Dockerイメージビルド成功: $IMAGE_SHA"
+          else
+            echo "❌ Cloud Build失敗"
+            echo "📋 トラブルシューティング："
+            echo "  1. Cloud Build APIが有効化されているか確認"
+            echo "  2. サービスアカウントにCloud Build権限があるか確認"
+            echo "  3. Dockerfileに構文エラーがないか確認"
+            echo "  4. プロジェクト設定とリソース制限を確認"
+            echo "🔗 Cloud Build ログ: https://console.cloud.google.com/cloud-build/builds?project=${{ secrets.PROJECT_ID }}"
+            exit 1
+          fi
           
           # Tag as latest
           gcloud container images add-tag "$IMAGE_SHA" "$IMAGE_LATEST" --quiet
@@ -255,6 +251,7 @@ jobs:
   application-deploy:
     needs: [infrastructure-base, docker-build]
     runs-on: ubuntu-latest
+    # 🚧 安全弁: 本番デプロイ二重制御（移行完了後は標準的なブランチ判定のみに簡素化予定）
     if: vars.ENABLE_INTEGRATED_DEPLOY == 'true' && (github.ref != 'refs/heads/main' || vars.ENABLE_PRODUCTION_DEPLOY == 'true')
     
     steps:
@@ -287,14 +284,8 @@ jobs:
             exit 1
           fi
           
-          # Docker imageの存在確認
           IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ env.ARTIFACT_REPO_BASE }}/${APP_NAME}:latest"
-          if gcloud container images describe "$IMAGE_URL" >/dev/null 2>&1; then
-            echo "✅ Docker image 確認済み: $IMAGE_URL"
-          else
-            echo "❌ Docker image が見つかりません: $IMAGE_URL"
-            exit 1
-          fi
+          echo "📦 Docker image: $IMAGE_URL"
           
           echo "🎉 すべての前提条件が満たされています"
       

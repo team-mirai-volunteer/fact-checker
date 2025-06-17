@@ -2,7 +2,7 @@
 locals {
   environment = var.branch_name == "main" ? "production" : "staging"
   
-  env_suffix = local.environment == "production" ? "prod" : "staging"
+  env_suffix = local.environment == "production" ? "prod" : "dev"
   app_name   = "x-fact-checker-${local.env_suffix}"
 
   environment_config = {

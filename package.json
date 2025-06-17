@@ -21,7 +21,7 @@
     "twitter-api-v2": "^1.23.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.0.0",
     "@types/bun": "latest",
     "@types/node": "^22.15.21",
     "dotenv": "^16.5.0",

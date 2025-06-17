@@ -7,7 +7,7 @@ export function preventAutolink(text: string): string {
 
   // 2) http / https URL のドメイン中 '.' に ZWJ を挿入してリンクを無効化
   //    例: https://example.com → https://example⁠.com
-  out = out.replace(/\bhttps?:\/\/([^\/\s]+)/gi, (match, domain) => {
+  out = out.replace(/\bhttps?:\/\/([^/\s]+)/gi, (match, domain) => {
     const modifiedDomain = domain.replace(/\./g, `${WORD_JOINER}.`);
     return match.replace(domain, modifiedDomain);
   });

@@ -45,43 +45,6 @@ variable "secrets" {
   }
 }
 
-# Cloud Run 設定
-variable "min_instances" {
-  description = "Minimum number of Cloud Run instances"
-  type        = number
-  default     = 0
-}
-
-variable "max_instances" {
-  description = "Maximum number of Cloud Run instances"
-  type        = number
-  default     = 1
-}
-
-variable "cpu_limit" {
-  description = "CPU limit for Cloud Run instances"
-  type        = string
-  default     = "1"
-}
-
-variable "memory_limit" {
-  description = "Memory limit for Cloud Run instances"
-  type        = string
-  default     = "512Mi"
-}
-
-# アプリケーション設定
-variable "log_level" {
-  description = "Application log level"
-  type        = string
-  default     = "debug"
-}
-
-variable "cron_schedule" {
-  description = "Cron schedule for the scheduler"
-  type        = string
-  default     = "0 */2 * * *"
-}
 
 # デプロイ制御
 variable "deploy_phase" {

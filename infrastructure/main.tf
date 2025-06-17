@@ -5,6 +5,7 @@ locals {
   env_suffix = local.environment == "production" ? "prod" : "dev"
   app_name   = "x-fact-checker-${local.env_suffix}"
 
+  # 環境別設定: 保守性向上のため固定値として定義
   environment_config = {
     production = {
       min_instances = 1
@@ -15,12 +16,13 @@ locals {
       log_level     = "info"
     }
     staging = {
-      min_instances = var.min_instances
-      max_instances = var.max_instances
-      cpu_limit     = var.cpu_limit
-      memory_limit  = var.memory_limit
-      schedule      = var.cron_schedule
-      log_level     = var.log_level
+      # staging環境設定: 開発・テスト用に最適化
+      min_instances = 0          # コスト削減: 未使用時は0インスタンス
+      max_instances = 5          # リソース制限: 過剰使用防止
+      cpu_limit     = "1"        # 低CPU: テスト用途に十分
+      memory_limit  = "512Mi"    # 低メモリ: コスト効率重視
+      schedule      = "0 10-17 * * 1-5"  # 平日営業時間のみ実行
+      log_level     = "debug"    # 詳細ログ: 開発・デバッグ用
     }
   }
   

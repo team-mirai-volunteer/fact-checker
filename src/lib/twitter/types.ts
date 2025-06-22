@@ -19,7 +19,13 @@ export interface PostTweetParams {
   quote_tweet_id?: string;
 }
 
+export interface GetTweetByIdParams {
+  tweetId: string;
+  options?: any;
+}
+
 export interface BaseTwitterProvider {
   searchTweets(params: SearchTweetsParams): Promise<SearchTweetsResult>;
   postTweet(params: PostTweetParams): Promise<void>;
+  getTweetById(params: GetTweetByIdParams): Promise<Tweet | null>;
 }

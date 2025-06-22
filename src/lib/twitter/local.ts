@@ -7,39 +7,40 @@ import type {
   Tweet,
 } from "./types";
 
+const MOCK_TWEETS = [
+  {
+    id: "1234567890123456789",
+    text: "チームみらいは素晴らしい政策を提案しています。教育改革について詳しく説明してくれました。",
+    author_id: "user123",
+    created_at: "2024-01-15T10:30:00.000Z",
+  },
+  {
+    id: "9876543210987654321",
+    text: "チームみらいの代表は経済学博士号を持っていると聞きました。本当でしょうか？",
+    author_id: "user456",
+    created_at: "2024-01-15T11:45:00.000Z",
+  },
+  {
+    id: "5555555555555555555",
+    text: "チームみらいの環境政策は他の政党とは違ったアプローチですね。興味深いです。",
+    author_id: "user789",
+    created_at: "2024-01-15T12:20:00.000Z",
+  },
+  {
+    id: "1111111111111111111",
+    text: "今日は良い天気ですね。散歩に行こうと思います。",
+    author_id: "user999",
+    created_at: "2024-01-15T13:00:00.000Z",
+  },
+  {
+    id: "2222222222222222222",
+    text: "チームミライの新しい政策について話し合いました。",
+    author_id: "user888",
+    created_at: "2024-01-15T14:00:00.000Z",
+  },
+];
+
 export class LocalTwitterProvider implements BaseTwitterProvider {
-  private mockTweets = [
-    {
-      id: "1234567890123456789",
-      text: "チームみらいは素晴らしい政策を提案しています。教育改革について詳しく説明してくれました。",
-      author_id: "user123",
-      created_at: "2024-01-15T10:30:00.000Z",
-    },
-    {
-      id: "9876543210987654321",
-      text: "チームみらいの代表は経済学博士号を持っていると聞きました。本当でしょうか？",
-      author_id: "user456",
-      created_at: "2024-01-15T11:45:00.000Z",
-    },
-    {
-      id: "5555555555555555555",
-      text: "チームみらいの環境政策は他の政党とは違ったアプローチですね。興味深いです。",
-      author_id: "user789",
-      created_at: "2024-01-15T12:20:00.000Z",
-    },
-    {
-      id: "1111111111111111111",
-      text: "今日は良い天気ですね。散歩に行こうと思います。",
-      author_id: "user999",
-      created_at: "2024-01-15T13:00:00.000Z",
-    },
-    {
-      id: "2222222222222222222",
-      text: "チームミライの新しい政策について話し合いました。",
-      author_id: "user888",
-      created_at: "2024-01-15T14:00:00.000Z",
-    },
-  ];
 
   async searchTweets(params: SearchTweetsParams): Promise<SearchTweetsResult> {
     console.log("🔍 [LocalTwitter] Search Tweets:");
@@ -48,7 +49,7 @@ export class LocalTwitterProvider implements BaseTwitterProvider {
     console.log("Max Results:", params.max_results || 10);
     console.log("────────────────────────────────\n");
 
-    const allMockTweets = this.mockTweets;
+    const allMockTweets = MOCK_TWEETS;
 
 
     const filteredTweets = allMockTweets.filter(
@@ -79,7 +80,7 @@ export class LocalTwitterProvider implements BaseTwitterProvider {
   }
 
   async getTweetById(params: GetTweetByIdParams): Promise<Tweet | null> {
-    const mockTweet = this.mockTweets.find(tweet => tweet.id === params.tweetId);
+    const mockTweet = MOCK_TWEETS.find(tweet => tweet.id === params.tweetId);
     if (mockTweet) {
       return mockTweet;
     }

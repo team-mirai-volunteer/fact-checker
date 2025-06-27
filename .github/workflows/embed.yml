@@ -71,20 +71,16 @@ jobs:
       #     fi
       #     echo "$NEW_VECTOR_STORE_ID" | gcloud secrets versions add $VECTOR_STORE_BACKUP_SECRET --data-file=-
 
-      - name: Notify success
-        if: success() && vars.SLACK_NOTIFICATIONS == 'true'
+      - name: Notify Slack
+        if: always() && vars.SLACK_NOTIFICATIONS == 'true'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            MESSAGE=":rocket: Vector Store updated successfully: $NEW_VECTOR_STORE_ID"
+          else
+            MESSAGE=":boom: Vector Store update failed. Check workflow logs."
+          fi
           curl -X POST -H 'Content-type: application/json' \
-            --data '{"text":":rocket: Vector Store updated successfully: '"$NEW_VECTOR_STORE_ID"'"}' \
-            "$SLACK_WEBHOOK_URL"
-
-      - name: Notify failure
-        if: failure() && vars.SLACK_NOTIFICATIONS == 'true'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          curl -X POST -H 'Content-type: application/json' \
-            --data '{"text":":boom: Vector Store update failed. Check workflow logs."}' \
+            --data '{"text":"'"$MESSAGE"'"}' \
             "$SLACK_WEBHOOK_URL"

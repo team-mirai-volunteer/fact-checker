@@ -159,6 +159,8 @@ SLACK_WEBHOOK_URL: Slack通知用Webhook URL（通知有効時のみ）
 
 #### Personal Access Tokenの作成手順
 
+**注意**: セキュリティ上の理由から、GitHub Appsを使用した短命トークンの使用が推奨されます（[参考記事](https://zenn.dev/tmknom/articles/github-apps-token)）。ただし、簡単な設定のためにPATも使用可能です。
+
 1. GitHubの Settings > Developer settings > Personal access tokens > Fine-grained tokens を開く
 2. 「Generate new token」をクリック
 3. 以下の設定を行う：
@@ -166,6 +168,8 @@ SLACK_WEBHOOK_URL: Slack通知用Webhook URL（通知有効時のみ）
    - **Permissions**: Repository permissions で「Contents: Read」を設定
 4. 「Generate token」をクリックしてトークンを生成
 5. 生成されたトークンを `POLICY_REPO_PAT` シークレットに設定
+
+**GitHub Appsを使用する場合**: より高いセキュリティが必要な環境では、GitHub Appsを作成し、短命トークンを生成する方法を検討してください。
 
 ## 2. Google Cloud Secret Managerを設定する
 
@@ -188,9 +192,19 @@ gcloud secrets add-iam-policy-binding VECTOR_STORE_ID-backup \
   --role="roles/secretmanager.secretAccessor"
 ```
 
-## 3. 外部からワークフローをトリガーする
+## 3. ワークフローを実行する
 
-GitHub APIを使用して、外部からワークフローを実行できます。
+### gh CLIを使用した実行（推奨）
+
+```bash
+# ワークフローを手動実行
+gh workflow run "Embed-and-Swap"
+
+# 特定のブランチで実行
+gh workflow run "Embed-and-Swap" --ref main
+```
+
+### GitHub APIを使用した実行（プログラム連携用）
 
 ```bash
 # GitHub Personal Access Tokenを設定

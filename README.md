@@ -153,23 +153,37 @@ SLACK_NOTIFICATIONS: Slack通知の有効/無効（true/false）
 OPENAI_API_KEY: OpenAI APIキー
 GCLOUD_SERVICE_KEY: Google Cloud サービスアカウントキー（JSON形式）
 PROJECT_ID: Google Cloud プロジェクトID
-POLICY_REPO_PAT: ポリシーリポジトリアクセス用Personal Access Token
+GITHUB_APP_ID: GitHub AppのID
+GITHUB_APP_PRIVATE_KEY: GitHub Appの秘密鍵（PEM形式）
 SLACK_WEBHOOK_URL: Slack通知用Webhook URL（通知有効時のみ）
 ```
 
-#### Personal Access Tokenの作成手順
+#### GitHub Appの作成手順
 
-**注意**: セキュリティ上の理由から、GitHub Appsを使用した短命トークンの使用が推奨されます（[参考記事](https://zenn.dev/tmknom/articles/github-apps-token)）。ただし、簡単な設定のためにPATも使用可能です。
+セキュリティ上の理由から、Personal Access Tokenの代わりにGitHub Appsを使用します。
 
-1. GitHubの Settings > Developer settings > Personal access tokens > Fine-grained tokens を開く
-2. 「Generate new token」をクリック
-3. 以下の設定を行う：
-   - **Repository access**: Selected repositories を選択し、ポリシーリポジトリを指定
-   - **Permissions**: Repository permissions で「Contents: Read」を設定
-4. 「Generate token」をクリックしてトークンを生成
-5. 生成されたトークンを `POLICY_REPO_PAT` シークレットに設定
+1. **GitHub Appの作成**
+   - GitHub Settings > Developer settings > GitHub Apps を開く
+   - 「New GitHub App」をクリック
+   - 以下の設定を行う：
+     - **App name**: 適切な名前を設定（例：fact-checker-policy-reader）
+     - **Homepage URL**: リポジトリのURL
+     - **Repository permissions**: Contents: Read を設定
+     - **Where can this GitHub App be installed?**: Only on this account を選択
 
-**GitHub Appsを使用する場合**: より高いセキュリティが必要な環境では、GitHub Appsを作成し、短命トークンを生成する方法を検討してください。
+2. **秘密鍵の生成**
+   - 作成したGitHub Appの設定画面で「Generate a private key」をクリック
+   - ダウンロードされたPEMファイルの内容を `GITHUB_APP_PRIVATE_KEY` シークレットに設定
+
+3. **App IDの取得**
+   - GitHub Appの設定画面で「App ID」を確認
+   - この値を `GITHUB_APP_ID` シークレットに設定
+
+4. **GitHub Appのインストール**
+   - 「Install App」タブでポリシーリポジトリにアプリをインストール
+   - 必要なリポジトリのみを選択してアクセス権を付与
+
+この方法により、短命で最小権限のトークンが自動生成され、セキュリティが大幅に向上します。
 
 ## 2. Google Cloud Secret Managerを設定する
 

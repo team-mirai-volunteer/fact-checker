@@ -20,12 +20,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          repositories: ${{ env.POLICY_REPO }}
+
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.POLICY_REPO }}
           ref: ${{ github.event.client_payload.sha || vars.POLICY_BRANCH || 'main' }}
           path: policy
-          token: ${{ secrets.POLICY_REPO_PAT || github.token }}
+          token: ${{ steps.generate_token.outputs.token }}
 
       - uses: google-github-actions/auth@v2
         with:

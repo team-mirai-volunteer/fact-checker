@@ -1,12 +1,12 @@
 pre-commit:
   commands:
     check:
-      run: npx biome check --write .
+      run: bun run biome:check:write
       stage_fixed: true
 
-# pre-push:
-#   commands:
-#     build:
-#       run: npm run build
-#     build-scripts:
-#       run: npm run build:scripts
+pre-push:
+  commands:
+    build:
+      run: bun run build
+    build-scripts:
+      run: bun run build:scripts

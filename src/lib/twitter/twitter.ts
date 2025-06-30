@@ -66,9 +66,9 @@ export class TwitterProvider implements BaseTwitterProvider {
 
   async getTweetById(params: GetTweetByIdParams): Promise<Tweet | null> {
     try {
-      const result = await this.client.v2.singleTweet(params.tweetId, params.options);
+      const result = await this.client.v2.singleTweet(params.tweetId);
       if (!result.data) return null;
-      
+
       return {
         id: result.data.id,
         text: result.data.text,
@@ -76,7 +76,7 @@ export class TwitterProvider implements BaseTwitterProvider {
         created_at: result.data.created_at,
       };
     } catch (error) {
-      console.error('Failed to get tweet by ID:', error);
+      console.error("Failed to get tweet by ID:", error);
       return null;
     }
   }

@@ -1,7 +1,7 @@
 pre-commit:
   commands:
     check:
-      run: bun run biome:check:write
+      run: npx biome check --write .
       stage_fixed: true
 
 pre-push:

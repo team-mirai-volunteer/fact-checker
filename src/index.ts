@@ -4,8 +4,8 @@ import { createSlackProvider } from "./lib/slack";
 import { extractTweetId } from "./lib/slack/utils";
 import { createTwitterProvider } from "./lib/twitter";
 import { buildSearchQuery } from "./lib/twitter_query/query_build";
-import { verifyCron } from "./middlewares/verify-cron";
 import { verifyApiKey } from "./middlewares/verify-api-key";
+import { verifyCron } from "./middlewares/verify-cron";
 
 /* ------------------------------------------------------------------ */
 /*  Hono ルーティング定義                                             */
@@ -188,7 +188,7 @@ app.post("/api/fact-check-url", verifyApiKey, async (c) => {
     const body = await c.req.json();
     const { url } = body;
 
-    if (!url || typeof url !== 'string') {
+    if (!url || typeof url !== "string") {
       return c.json({ error: "URL is required" }, 400);
     }
 
@@ -203,7 +203,7 @@ app.post("/api/fact-check-url", verifyApiKey, async (c) => {
     }
 
     const factCheckResult = await checkAndNotify(tweet.text, url);
-    
+
     return c.json({
       success: true,
       tweet: {
@@ -215,7 +215,6 @@ app.post("/api/fact-check-url", verifyApiKey, async (c) => {
       fact_check_result: factCheckResult,
       checked_at: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error("Error in fact-check-url endpoint:", error);
     return c.json(

@@ -109,11 +109,13 @@ export class LocalTwitterProvider implements BaseTwitterProvider {
       },
     ];
 
-    const mockTweet = allMockTweets.find(tweet => tweet.id === params.tweetId);
+    const mockTweet = allMockTweets.find(
+      (tweet) => tweet.id === params.tweetId,
+    );
     if (mockTweet) {
       return mockTweet;
     }
-    
+
     return null;
   }
 }

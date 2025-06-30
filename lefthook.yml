@@ -7,6 +7,6 @@ pre-commit:
 pre-push:
   commands:
     build:
-      run: bun run build
+      run: npm run build
     build-scripts:
-      run: bun run build:scripts
+      run: npm run build:scripts

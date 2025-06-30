@@ -21,7 +21,6 @@ export interface PostTweetParams {
 
 export interface GetTweetByIdParams {
   tweetId: string;
-  options?: any;
 }
 
 export interface BaseTwitterProvider {

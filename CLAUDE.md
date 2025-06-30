@@ -59,7 +59,7 @@ This is a Twitter/X fact-checking bot that monitors posts about "チームみら
 4. **Web Server** (`src/index.ts`)
    - Built with Hono framework
    - Main endpoints:
-     - `GET /cron/fetch` - Scheduled endpoint for Twitter monitoring (protected by CRON_SECRET)
+     - `GET /cron/fetch` - Scheduled endpoint for Twitter monitoring (protected by API_SECRET_KEY)
      - `POST /slack/events` - Webhook for Slack events
      - `POST /slack/actions` - Webhook for Slack interactive actions
 
@@ -81,7 +81,7 @@ All stored in `.env` file:
 
 #### External APIs
 - `X_BEARER_TOKEN` - Twitter/X API Bearer Token
-- `CRON_SECRET` - Secret for authenticating cron requests
+- `API_SECRET_KEY` - Secret for authenticating API requests
 
 ## Development Guidelines
 

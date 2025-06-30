@@ -56,4 +56,4 @@ jobs:
             X_APP_SECRET=X_APP_SECRET:latest,\
             X_ACCESS_TOKEN=X_ACCESS_TOKEN:latest,\
             X_ACCESS_SECRET=X_ACCESS_SECRET:latest,\
-            CRON_SECRET=CRON_SECRET:latest"
+            API_SECRET_KEY=API_SECRET_KEY:latest"

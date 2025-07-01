@@ -1,0 +1,95 @@
+name: バグ報告
+description: バグや不具合を報告する際に使用してください
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ報告をありがとうございます。以下の項目を埋めてください。
+        
+  - type: input
+    id: summary
+    attributes:
+      label: バグの概要
+      description: バグの内容を簡潔に説明してください
+      placeholder: 例：ファクトチェック機能でエラーが発生する
+    validations:
+      required: true
+      
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: 再現手順
+      description: バグを再現する手順を順番に記載してください
+      placeholder: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+      
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: 期待される動作
+      description: 本来どのような動作が期待されるか記載してください
+      placeholder: 正常にファクトチェックが実行される
+    validations:
+      required: true
+      
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: 実際の動作
+      description: 実際にどのような動作が発生したか記載してください
+      placeholder: エラーメッセージが表示されて処理が停止する
+    validations:
+      required: true
+      
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: エラーログ
+      description: エラーログやスタックトレースがあれば貼り付けてください
+      render: shell
+    validations:
+      required: false
+      
+  - type: dropdown
+    id: environment-os
+    attributes:
+      label: OS
+      description: 使用しているOSを選択してください
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - その他
+    validations:
+      required: true
+      
+  - type: input
+    id: bun-version
+    attributes:
+      label: Bun バージョン
+      description: Bunのバージョンを入力してください
+      placeholder: 例：1.0.0
+    validations:
+      required: true
+      
+  - type: input
+    id: provider
+    attributes:
+      label: AIプロバイダー
+      description: 使用しているAIプロバイダーを入力してください
+    validations:
+      required: false
+      
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 追加情報
+      description: その他、バグに関する情報があれば記載してください
+    validations:
+      required: false

@@ -1,0 +1,137 @@
+name: 機能要望
+description: 新機能や改善の提案をする際に使用してください
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        機能要望をありがとうございます。以下の項目を埋めてください。
+        
+  - type: input
+    id: feature-summary
+    attributes:
+      label: 機能の概要
+      description: 提案する機能の概要を1行で説明してください
+      placeholder: 例：Slackでのファクトチェック結果をより詳細に表示する
+    validations:
+      required: true
+      
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景・課題
+      description: なぜこの機能が必要なのか、どのような課題を解決するのか記載してください
+      placeholder: |
+        現在の課題：
+        - 
+        - 
+        
+        解決したい理由：
+        - 
+        - 
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: feature-category
+    attributes:
+      label: 機能カテゴリ
+      description: 提案する機能のカテゴリを選択してください
+      options:
+        - ファクトチェック機能
+        - Twitter連携
+        - Slack連携
+        - UI/UX改善
+        - パフォーマンス改善
+        - セキュリティ
+        - 開発者体験
+        - その他
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      description: この機能の優先度を選択してください
+      options:
+        - High（緊急度が高い）
+        - Medium（通常の優先度）
+        - Low（あれば良い機能）
+    validations:
+      required: true
+      
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提案内容
+      description: 具体的にどのような機能・実装を提案するか詳しく記載してください
+      placeholder: |
+        具体的な機能内容：
+        - 
+        - 
+        
+        実装方法のアイデア：
+        - 
+        - 
+    validations:
+      required: true
+      
+  - type: textarea
+    id: expected-benefits
+    attributes:
+      label: 期待される効果
+      description: この機能によってどのような効果が期待できるか記載してください
+      placeholder: |
+        ユーザーへの効果：
+        - 
+        - 
+        
+        システムへの効果：
+        - 
+        - 
+    validations:
+      required: true
+      
+  - type: checkboxes
+    id: affected-components
+    attributes:
+      label: 影響を受けるコンポーネント
+      description: この機能により影響を受ける可能性があるコンポーネントを選択してください
+      options:
+        - label: ファクトチェッカーエンジン
+        - label: Twitter API連携
+        - label: Slack Bot
+        - label: Webサーバー
+        - label: データベース/ベクターストア
+        - label: 設定管理
+        - label: CI/CD
+      
+  - type: textarea
+    id: implementation-ideas
+    attributes:
+      label: 実装案（任意）
+      description: もし実装のアイデアやコード例があれば記載してください
+      render: typescript
+    validations:
+      required: false
+      
+  - type: textarea
+    id: references
+    attributes:
+      label: 参考資料
+      description: 参考になるリンクや資料があれば記載してください
+      placeholder: |
+        - https://example.com
+        - 関連するIssue: #123
+    validations:
+      required: false
+      
+  - type: textarea
+    id: additional-notes
+    attributes:
+      label: その他
+      description: その他、補足事項があれば記載してください
+    validations:
+      required: false

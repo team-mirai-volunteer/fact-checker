@@ -3,6 +3,9 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
+    "build": "bun run typecheck && bun build src/index.ts --outfile dist/index.js --minify --target bun",
+    "build:scripts": "bun run typecheck && bun build scripts/*.ts --outdir dist/scripts --target bun",
+    "typecheck": "bunx tsc --noEmit",
     "upload": "bun run scripts/upload.ts",
     "fact-check": "bun run scripts/fact-check.cli.ts",
     "biome:check:write": "biome check --write .",
@@ -25,8 +28,8 @@
     "undici": "^7.10.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
     "@jest/globals": "^30.0.0-beta.3",
+    "@biomejs/biome": "2.0.0",
     "@types/bun": "latest",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.21",

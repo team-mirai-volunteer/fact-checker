@@ -1,6 +1,5 @@
 import "dotenv/config";
-import { promises as fs } from "node:fs";
-import { createReadStream } from "node:fs";
+import { createReadStream, promises as fs } from "node:fs";
 import { glob } from "fast-glob";
 import OpenAI from "openai";
 

@@ -1,8 +1,13 @@
 # deps
 node_modules/
 
+# build output
+dist/
+
 # Secrets
 .env
 
 # config
 config/
+
+dist/

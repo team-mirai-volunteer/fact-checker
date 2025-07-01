@@ -16,6 +16,18 @@ Fact-Checkerは以下の機能を提供します：
 
 ---
 
+## コントリビュートについて
+
+* プロジェクトへのコントリビュートの際には、[コントリビューターライセンス契約（CLA）](./CLA.md)への同意が必須となります。ご了承ください。
+
+- Issue はどなたでも起票いただけます。ツール利用時に感じた改善点やバグについてぜひ Issue を作成してください
+- Issue への自己アサイン（担当者設定）は、Issue コメントに以下のコマンドを記載することで行えます：
+  - `/assign` - 自分自身を Issue のアサインに追加
+  - `/unassign` - 自分自身を Issue のアサインから削除
+- 初めての貢献に適したタスクには`good first issue`ラベルが付いています
+
+---
+
 ## セットアップ
 
 To install dependencies:
@@ -60,6 +72,14 @@ bun run upload
 VECTOR_STORE_ID="ここにコピーした ID を貼り付ける"
 ```
 
+## 4. ENV=prod を `.env` に追加する
+現時点で、ENVが`prod`もしくは`dev`の場合`openapi`を使う様になっています。
+それ以外は`src/lib/fact_checker/data/fact-check-result.json`のモックデータが出力されます。
+
+```bash
+ENV=prod
+```
+
 ---
 
 ## 4. ファクトチェックを実行する
@@ -95,6 +115,7 @@ SLACK_CHANNEL_ID="C01XXXXXXXXX" # 通知を送りたいチャンネル ID
 # -----------------------------------------------------------
 VECTOR_STORE_ID=""
 CRON_SECRET="" # cronの認証シークレット headerに設定する src/middlewares/verify-cron.tsを参照
+ENV=prod
 ```
 
 ## 2. デプロイする
@@ -106,6 +127,7 @@ gcloud run deploy x-fact-checker \
 --image "$IMAGE" \
 --region asia-northeast1 \
 --allow-unauthenticated \
+--set-env-vars="ENV=prod" \
 --set-secrets="OPENAI_API_KEY=OPENAI_API_KEY:latest,\
 X_BEARER_TOKEN=X_BEARER_TOKEN:latest,\
 VECTOR_STORE_ID=VECTOR_STORE_ID:latest,\

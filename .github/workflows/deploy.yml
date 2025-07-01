@@ -1,5 +1,16 @@
 name: Deploy to Cloud Run
-on: [push]
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'bun.lock'
+      - 'tsconfig.json'
+      - 'Dockerfile'
+      - '.github/workflows/**'
 
 permissions:
   contents: read      # auth アクション推奨
@@ -34,6 +45,7 @@ jobs:
           --image "$IMAGE" \
           --region "$REGION" \
           --allow-unauthenticated \
+          --set-env-vars="ENV=prod" \
           --update-secrets="OPENAI_API_KEY=OPENAI_API_KEY:latest,\
             X_BEARER_TOKEN=X_BEARER_TOKEN:latest,\
             VECTOR_STORE_ID=VECTOR_STORE_ID:latest,\

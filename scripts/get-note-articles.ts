@@ -313,7 +313,14 @@ export async function pushToGithub(
     fs.mkdirSync(tempDir, { recursive: true });
 
     // 一時ディレクトリにGitリポジトリを初期化
-    const git = simpleGit(tempDir);
+    const git = simpleGit(tempDir, {
+      env: {
+        GIT_ASKPASS: "echo",
+        GIT_TERMINAL_PROMPT: "0",
+        GIT_USERNAME: owner,
+        GIT_PASSWORD: process.env.NOTE_REPO_TOKEN,
+      },
+    } as any);
     log("Initializing temporary Git repository...");
     await git.init();
 

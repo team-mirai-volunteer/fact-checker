@@ -224,7 +224,7 @@ describe("GitHubリポジトリへのアップロードのセキュリティテ�
           "origin",
           "https://github.com/owner/repo.git",
         );
-        // トークンがURLに含まれていないことを確認
+        // addRemoteが正しく呼ばれたことを確認
         expect(addRemoteMock).toHaveBeenCalledTimes(1);
       } finally {
         // 一時ディレクトリの削除

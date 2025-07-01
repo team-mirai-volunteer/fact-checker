@@ -224,8 +224,10 @@ describe("GitHubリポジトリへのアップロードのセキュリティテ�
           "origin",
           "https://github.com/owner/repo.git",
         );
-        // addRemoteが正しく呼ばれたことを確認
-        expect(addRemoteMock).toHaveBeenCalledTimes(1);
+        // トークンがURLに含まれていないことを確認
+        const remoteUrl = (addRemoteMock.mock.calls as any)[0][1];
+        expect(remoteUrl).not.toContain("test-token");
+        expect(remoteUrl).not.toContain(process.env.NOTE_REPO_TOKEN);
       } finally {
         // 一時ディレクトリの削除
         fs.rmSync(tempDir, { recursive: true, force: true });

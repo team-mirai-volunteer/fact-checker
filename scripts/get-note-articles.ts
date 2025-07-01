@@ -94,7 +94,7 @@ function validateInput(input: string): void {
     throw new Error("Invalid input");
   }
   // 特殊文字のチェック
-  if (/[\n\r\t\0`$()\[\]{}]/.test(input)) {
+  if (/[\n\r\t\0`$()[\]{}]/.test(input)) {
     throw new Error("Invalid input");
   }
 }
@@ -110,7 +110,7 @@ function validateOutputDir(input: string): void {
     throw new Error("Invalid input");
   }
   // 特殊文字のチェック
-  if (/[\n\r\t\0`$()\[\]{}]/.test(input)) {
+  if (/[\n\r\t\0`$()[\]{}]/.test(input)) {
     throw new Error("Invalid input");
   }
 }
@@ -313,14 +313,7 @@ export async function pushToGithub(
     fs.mkdirSync(tempDir, { recursive: true });
 
     // 一時ディレクトリにGitリポジトリを初期化
-    const git = simpleGit(tempDir, {
-      env: {
-        GIT_ASKPASS: "echo",
-        GIT_TERMINAL_PROMPT: "0",
-        GIT_USERNAME: owner,
-        GIT_PASSWORD: process.env.NOTE_REPO_TOKEN,
-      },
-    });
+    const git = simpleGit(tempDir);
     log("Initializing temporary Git repository...");
     await git.init();
 

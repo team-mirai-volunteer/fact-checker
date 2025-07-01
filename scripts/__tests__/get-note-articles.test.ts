@@ -225,7 +225,7 @@ describe("GitHubリポジトリへのアップロードのセキュリティテ�
           "https://github.com/owner/repo.git",
         );
         // トークンがURLに含まれていないことを確認
-        const remoteUrl = addRemoteMock.mock.calls[0][1];
+        const remoteUrl = (addRemoteMock.mock.calls as any)[0][1];
         expect(remoteUrl).not.toContain("test-token");
         expect(remoteUrl).not.toContain(process.env.NOTE_REPO_TOKEN);
       } finally {

@@ -94,7 +94,7 @@ function validateInput(input: string): void {
     throw new Error("Invalid input");
   }
   // 特殊文字のチェック
-  if (/[\n\r\t\0`$()\[\]{}]/.test(input)) {
+  if (/[\n\r\t\0`$()[\]{}]/.test(input)) {
     throw new Error("Invalid input");
   }
 }
@@ -110,7 +110,7 @@ function validateOutputDir(input: string): void {
     throw new Error("Invalid input");
   }
   // 特殊文字のチェック
-  if (/[\n\r\t\0`$()\[\]{}]/.test(input)) {
+  if (/[\n\r\t\0`$()[\]{}]/.test(input)) {
     throw new Error("Invalid input");
   }
 }
@@ -320,7 +320,7 @@ export async function pushToGithub(
         GIT_USERNAME: owner,
         GIT_PASSWORD: process.env.NOTE_REPO_TOKEN,
       },
-    });
+    } as any);
     log("Initializing temporary Git repository...");
     await git.init();
 

@@ -5,6 +5,7 @@ import { extractTweetId } from "./lib/slack/utils";
 import { createTwitterProvider } from "./lib/twitter";
 import { buildSearchQuery } from "./lib/twitter_query/query_build";
 import { verifyApiKey } from "./middlewares/verify-api-key";
+import { verifyCron } from "./middlewares/verify-cron";
 
 /* ------------------------------------------------------------------ */
 /*  Hono ルーティング定義                                             */
@@ -47,7 +48,7 @@ async function checkAndNotify(tweetText: string, tweetUrl: string) {
 // Slack通知テスト用エンドポイント
 // FYI localの動作確認用で一旦設置
 
-app.get("/test/slack", verifyApiKey, async (c) => {
+app.get("/test/slack", verifyCron, async (c) => {
   try {
     const testTweet = "チームみらいはエンジニアチームを作りません｡";
     const testTweetUrl = "https://x.com/idobata_ai/status/1926171130294939673";
@@ -105,7 +106,7 @@ app.get("/test/twitter", async (c) => {
 /* ------------------------------------------------------------ */
 /* 1. cron 用エンドポイント (Vercel / Cloudflare Cron でも OK)  */
 /* ------------------------------------------------------------ */
-app.get("/cron/fetch", verifyApiKey, async (c) => {
+app.get("/cron/fetch", verifyCron, async (c) => {
   const query = buildSearchQuery();
 
   // Twitter 検索

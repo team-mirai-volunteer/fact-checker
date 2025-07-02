@@ -114,6 +114,7 @@ SLACK_CHANNEL_ID="C01XXXXXXXXX" # 通知を送りたいチャンネル ID
 
 # -----------------------------------------------------------
 VECTOR_STORE_ID=""
+CRON_SECRET="" # cronの認証シークレット headerに設定する src/middlewares/verify-cron.tsを参照
 API_SECRET_KEY="" # API認証シークレット x-api-keyヘッダーに設定する
 ENV=prod
 ```
@@ -138,6 +139,7 @@ X_APP_KEY=X_APP_KEY:latest,\
 X_APP_SECRET=X_APP_SECRET:latest,\
 X_ACCESS_TOKEN=X_ACCESS_TOKEN:latest,\
 X_ACCESS_SECRET=X_ACCESS_SECRET:latest,\
+CRON_SECRET=CRON_SECRET:latest,\
 API_SECRET_KEY=API_SECRET_KEY:latest"
 ```
 ## 3. 定期実行を設定する
@@ -149,7 +151,7 @@ gcloud scheduler jobs create http cron-fetch-tweets \
 --time-zone "Asia/Tokyo" \
 --http-method GET \
 --uri "$SERVICE_URL/cron/fetch" \
---update-headers "x-api-key=$API_SECRET_KEY"
+--update-headers "X-Cron-Secret=$CRON_SECRET"
 ```
 
 

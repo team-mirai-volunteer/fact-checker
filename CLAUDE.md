@@ -82,6 +82,7 @@ All stored in `.env` file:
 #### External APIs
 - `X_BEARER_TOKEN` - Twitter/X API Bearer Token
 - `CRON_SECRET` - Secret for authenticating cron requests
+- `API_SECRET_KEY` - Secret for authenticating API requests
 
 ## Development Guidelines
 

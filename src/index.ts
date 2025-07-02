@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { createFactChecker } from "./lib/fact_checker";
 import { createSlackProvider } from "./lib/slack";
+import { extractTweetId } from "./lib/slack/utils";
 import { createTwitterProvider } from "./lib/twitter";
 import { buildSearchQuery } from "./lib/twitter_query/query_build";
+import { verifyApiKey } from "./middlewares/verify-api-key";
 import { verifyCron } from "./middlewares/verify-cron";
 
 /* ------------------------------------------------------------------ */
@@ -176,6 +178,53 @@ app.post("/slack/actions", async (c) => {
 
   // ④ 最後に Hono として 200 OK を返す
   return c.json({});
+});
+
+/* ------------------------------------------------------------ */
+/* API エンドポイント: TwitterのURL指定によるファクトチェック    */
+/* ------------------------------------------------------------ */
+app.post("/api/fact-check-url", verifyApiKey, async (c) => {
+  try {
+    const body = await c.req.json();
+    const { url } = body;
+
+    if (!url || typeof url !== "string") {
+      return c.json({ error: "URL is required" }, 400);
+    }
+
+    const tweetId = extractTweetId(url);
+    if (!tweetId) {
+      return c.json({ error: "Invalid Twitter URL format" }, 400);
+    }
+
+    const tweet = await twitterProvider.getTweetById({ tweetId });
+    if (!tweet) {
+      return c.json({ error: "Tweet not found or not accessible" }, 404);
+    }
+
+    const factCheckResult = await checkAndNotify(tweet.text, url);
+
+    return c.json({
+      success: true,
+      tweet: {
+        id: tweet.id,
+        text: tweet.text,
+        author_id: tweet.author_id,
+        created_at: tweet.created_at,
+      },
+      fact_check_result: factCheckResult,
+      checked_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error in fact-check-url endpoint:", error);
+    return c.json(
+      {
+        error: error instanceof Error ? error.message : "Unknown error",
+        success: false,
+      },
+      500,
+    );
+  }
 });
 
 /* 型互換のために一応 export も残しておく */

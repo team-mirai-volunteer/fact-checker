@@ -1,9 +1,11 @@
 import { TwitterApi } from "twitter-api-v2";
 import type {
   BaseTwitterProvider,
+  GetTweetByIdParams,
   PostTweetParams,
   SearchTweetsParams,
   SearchTweetsResult,
+  Tweet,
 } from "./types";
 
 function getEnv(name: string): string {
@@ -60,5 +62,22 @@ export class TwitterProvider implements BaseTwitterProvider {
       text: params.text,
       quote_tweet_id: params.quote_tweet_id,
     });
+  }
+
+  async getTweetById(params: GetTweetByIdParams): Promise<Tweet | null> {
+    try {
+      const result = await this.client.v2.singleTweet(params.tweetId);
+      if (!result.data) return null;
+
+      return {
+        id: result.data.id,
+        text: result.data.text,
+        author_id: result.data.author_id,
+        created_at: result.data.created_at,
+      };
+    } catch (error) {
+      console.error("Failed to get tweet by ID:", error);
+      return null;
+    }
   }
 }

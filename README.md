@@ -154,4 +154,35 @@ gcloud scheduler jobs create http cron-fetch-tweets \
 --update-headers "X-Cron-Secret=$CRON_SECRET"
 ```
 
+# 補助ツール
 
+## note記事取得スクリプト
+
+ファクトチェックに利用するデータのソースとして[note]（note.com）の情報を利用するため、noteから任意のnoteユーザーの記事をMarkdown形式に変換・ダウンロードする補助スクリプトを用意しています。ローカルの任意のディレクトリにファイルを保存できる他、オプションとして`--github-repo`を指定することでGitHubリポジトリにファイルをPushすることもできます。
+
+### 使用例
+
+```bash
+# 基本的な使用方法
+bun run get-note-article --username ユーザー名 --output-dir 保存先ディレクトリ
+
+# デフォルト設定で実行（ユーザー: annotakahiro24、保存先: media/note）
+bun run get-note-article
+
+# GitHubリポジトリにも保存する場合
+bun run get-note-article --username ユーザー名 --output-dir 保存先ディレクトリ --github-repo GitHubユーザー名/リポジトリ名
+```
+
+### オプション
+
+- `--username`: noteのユーザー名（デフォルト: annotakahiro24）
+- `--output-dir`: 記事の保存先ディレクトリ（デフォルト: media/note）
+- `--github-repo`: GitHubリポジトリ（オプション、例: "username/repo"）
+
+### GitHubリポジトリへの保存
+
+GitHubリポジトリに保存する場合は、環境変数`NOTE_REPO_TOKEN`にGithubトークンの値を設定する必要があります。.envファイルに以下エントリを追加してください。
+
+```bash
+NOTE_REPO_TOKEN="ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+```

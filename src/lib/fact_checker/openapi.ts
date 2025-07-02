@@ -23,7 +23,7 @@ export function createOpenAIFactChcker(): FactChcker {
      */
     factCheck: async (content: string): Promise<CheckResult> => {
       const res = await openai.responses.create({
-        model: "o3-mini",
+        model: "o3",
         tools: [{ type: "file_search", vector_store_ids: [vectorStoreId] }],
         include: ["file_search_call.results"],
         input: [

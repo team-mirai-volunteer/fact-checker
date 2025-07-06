@@ -8,6 +8,9 @@ export default defineConfig(() => {
       commonjsOptions: {
         include: ["@slack/bolt", "@slack/web-api", "@slack/events-api"],
       },
+      rollupOptions: {
+        external: ["@slack/bolt", "@slack/web-api"],
+      },
     },
     plugins: [
       build({

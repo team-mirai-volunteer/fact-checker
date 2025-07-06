@@ -12,7 +12,8 @@
     "format": "biome format --write .",
     "lint": "biome lint --write .",
     "get-note-article": "bun run scripts/get-note-articles.ts",
-    "test": "bun test"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.2",
@@ -28,8 +29,8 @@
     "undici": "^7.10.0"
   },
   "devDependencies": {
-    "@jest/globals": "^30.0.0-beta.3",
     "@biomejs/biome": "2.0.0",
+    "@jest/globals": "^30.0.0-beta.3",
     "@types/bun": "latest",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.21",
@@ -39,6 +40,7 @@
     "jest": "^29.7.0",
     "lefthook": "^1.11.13",
     "ts-jest": "^29.3.4",
-    "tsx": "^4.19.4"
+    "tsx": "^4.19.4",
+    "vitest": "3.2.4"
   }
 }

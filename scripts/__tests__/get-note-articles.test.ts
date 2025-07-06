@@ -238,7 +238,7 @@ describe("GitHubリポジトリへのアップロードのセキュリティテ�
     test("環境変数が設定されていない場合のエラー処理", async () => {
       // 環境変数をクリア
       const originalToken = process.env.NOTE_REPO_TOKEN;
-      process.env.NOTE_REPO_TOKEN = undefined;
+      delete process.env.NOTE_REPO_TOKEN;
 
       // テスト用の一時ディレクトリ作成
       const tempDir = "/tmp/test-repo";

@@ -1,6 +1,6 @@
-import { describe, expect, mock, test } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { describe, expect, test, vi } from "vitest";
 import {
   parseArgs,
   pushToGithub,
@@ -9,32 +9,33 @@ import {
 } from "../get-note-articles.js";
 
 // simple-gitのモック
-const addRemoteMock = mock(() => Promise.resolve());
-const simpleGitMock = mock(() => ({
-  init: mock(() => Promise.resolve()),
-  addRemote: addRemoteMock,
-  listRemote: mock(() => Promise.resolve("refs/heads/main")),
-  fetch: mock(() => Promise.resolve()),
-  checkout: mock(() => Promise.resolve()),
-  add: mock(() => Promise.resolve()),
-  status: mock(() =>
-    Promise.resolve({ modified: [], not_added: [], created: [] }),
-  ),
-  commit: mock(() => Promise.resolve()),
-  push: mock(() => Promise.resolve()),
+const { addRemoteMock } = vi.hoisted(() => ({
+  addRemoteMock: vi.fn(() => Promise.resolve()),
 }));
-mock.module("simple-git", () => ({ simpleGit: simpleGitMock }));
+vi.mock("simple-git", () => ({
+  simpleGit: vi.fn(() => ({
+    init: vi.fn(() => Promise.resolve()),
+    addRemote: addRemoteMock,
+    listRemote: vi.fn(() => Promise.resolve("refs/heads/main")),
+    fetch: vi.fn(() => Promise.resolve()),
+    checkout: vi.fn(() => Promise.resolve()),
+    add: vi.fn(() => Promise.resolve()),
+    status: vi.fn(() =>
+      Promise.resolve({ modified: [], not_added: [], created: [] }),
+    ),
+    commit: vi.fn(() => Promise.resolve()),
+    push: vi.fn(() => Promise.resolve()),
+  })),
+}));
 
 // Octokitのモック
-const getMock = mock(() =>
-  Promise.resolve({ data: { default_branch: "main" } }),
-);
-const OctokitMock = mock(() => ({
-  repos: {
-    get: getMock,
-  },
+vi.mock("@octokit/rest", () => ({
+  Octokit: vi.fn(() => ({
+    repos: {
+      get: vi.fn(() => Promise.resolve({ data: { default_branch: "main" } })),
+    },
+  })),
 }));
-mock.module("@octokit/rest", () => ({ Octokit: OctokitMock }));
 
 describe("CLI引数パース処理のセキュリティテスト", () => {
   test("パストラバーサル攻撃のパターン", () => {

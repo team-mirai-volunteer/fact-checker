@@ -2,6 +2,7 @@
   "name": "x-fact-check",
   "type": "module",
   "scripts": {
+    "dev:vite": "vite",
     "dev": "bun run --hot src/index.ts",
     "build": "bun run typecheck && bun build src/index.ts --outfile dist/index.js --minify --target bun",
     "build:scripts": "bun run typecheck && bun build scripts/*.ts --outdir dist/scripts --target bun",
@@ -30,6 +31,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.0",
+    "@hono/vite-build": "^1.6.2",
+    "@hono/vite-dev-server": "0.20.0",
     "@jest/globals": "^30.0.0-beta.3",
     "@types/bun": "latest",
     "@types/jest": "^29.5.14",
@@ -41,6 +44,7 @@
     "lefthook": "^1.11.13",
     "ts-jest": "^29.3.4",
     "tsx": "^4.19.4",
+    "vite": "7.0.2",
     "vitest": "3.2.4"
   }
 }

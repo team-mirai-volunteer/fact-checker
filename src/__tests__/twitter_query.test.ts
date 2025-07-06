@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { searchFilters, searchKeywords } from "../lib/twitter_query/config";
 import { buildSearchQuery } from "../lib/twitter_query/query_build";
 

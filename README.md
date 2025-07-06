@@ -32,12 +32,12 @@ Fact-Checkerは以下の機能を提供します：
 
 To install dependencies:
 ```sh
-bun install
+npm install
 ```
 
 To run:
 ```sh
-bun run dev
+npm run dev
 ```
 
 # Fact-Check CLI クイックスタートガイド
@@ -59,7 +59,7 @@ OPENAI_API_KEY="sk-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 ドキュメントの.mdファイルをpolicy/以下に配置し、以下を実行してください。
 ```bash
-bun run upload
+npm run upload
 ```
 
 実行後、`config/vectorStore.json` が生成（更新）され、**vector store ID** が出力されます。
@@ -85,7 +85,7 @@ ENV=prod
 ## 4. ファクトチェックを実行する
 
 ```bash
-bun run fact-check "ファクトチェックしたい文章"
+npm run fact-check "ファクトチェックしたい文章"
 ```
 
 ---
@@ -164,13 +164,13 @@ gcloud scheduler jobs create http cron-fetch-tweets \
 
 ```bash
 # 基本的な使用方法
-bun run get-note-article --username ユーザー名 --output-dir 保存先ディレクトリ
+npm run get-note-article --username ユーザー名 --output-dir 保存先ディレクトリ
 
 # デフォルト設定で実行（ユーザー: annotakahiro24、保存先: media/note）
-bun run get-note-article
+npm run get-note-article
 
 # GitHubリポジトリにも保存する場合
-bun run get-note-article --username ユーザー名 --output-dir 保存先ディレクトリ --github-repo GitHubユーザー名/リポジトリ名
+npm run get-note-article --username ユーザー名 --output-dir 保存先ディレクトリ --github-repo GitHubユーザー名/リポジトリ名
 ```
 
 ### オプション

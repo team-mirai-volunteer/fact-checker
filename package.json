@@ -12,7 +12,8 @@
     "format": "biome format --write .",
     "lint": "biome lint --write .",
     "get-note-article": "bun run scripts/get-note-articles.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.2",

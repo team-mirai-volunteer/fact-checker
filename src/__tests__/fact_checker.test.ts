@@ -46,6 +46,8 @@ describe("createFactChecker", () => {
       process.env = { ...originalEnv };
       process.env.OPENAI_API_KEY = "test-api-key";
       process.env.VECTOR_STORE_ID = "test-vector-store-id";
+      process.env.FACT_CHECKER_PROVIDER_ENDPOINT = "https://example.com/api";
+      process.env.FACT_CHECKER_PROVIDER_TOKEN = "token";
     });
 
     afterEach(() => {

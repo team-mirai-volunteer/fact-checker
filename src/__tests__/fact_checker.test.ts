@@ -53,18 +53,18 @@ describe("createFactChecker", () => {
     });
 
     test.each([
-      ["dev", "openai"],
-      ["prod", "openai"],
+      ["openai", "openai"],
       ["local", "local"],
-      ["test", "local"],
+      ["dify", "dify"],
+      ["", "local"], // デフォルトは local
     ])("ENVが%sの場合、%sが使用されること", (env, want) => {
-      process.env.ENV = env;
+      process.env.FACT_CHECKER_PROVIDER = env;
 
       expect(() => createFactChecker()).not.toThrow();
 
       const factChecker = createFactChecker();
       expect(factChecker).toBeDefined();
-      expect(factChecker.provider).toBe(want as "openai" | "local");
+      expect(factChecker.provider).toBe(want as "openai" | "local" | "dify");
     });
   });
 });

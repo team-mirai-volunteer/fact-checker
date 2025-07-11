@@ -13,6 +13,7 @@ const error = document.getElementById("error");
 const result = document.getElementById("result");
 const resultLabel = document.getElementById("resultLabel");
 const resultAnswer = document.getElementById("resultAnswer");
+const copyButton = document.getElementById("copyButton");
 
 // Get API URLs from environment or use default
 const AUTH_URL = `${window.FACT_CHECK_API_URL}/api/auth`;
@@ -135,5 +136,34 @@ form.addEventListener("submit", async (e) => {
   } finally {
     loading.style.display = "none";
     submitBtn.disabled = false;
+  }
+});
+
+// Handle copy button click
+copyButton.addEventListener("click", async () => {
+  const label = resultLabel.textContent;
+  const answer = resultAnswer.textContent;
+  const textToCopy = `${label}\n${answer}`;
+
+  try {
+    await navigator.clipboard.writeText(textToCopy);
+    
+    // Show success feedback
+    copyButton.textContent = "コピーしました！";
+    copyButton.classList.add("copied");
+    
+    // Reset button after 2 seconds
+    setTimeout(() => {
+      copyButton.textContent = "結果をコピー";
+      copyButton.classList.remove("copied");
+    }, 2000);
+  } catch (err) {
+    console.error("Failed to copy text: ", err);
+    copyButton.textContent = "コピーに失敗しました";
+    
+    // Reset button after 2 seconds
+    setTimeout(() => {
+      copyButton.textContent = "結果をコピー";
+    }, 2000);
   }
 });

@@ -229,3 +229,24 @@ button:disabled {
 .main-content {
   display: none;
 }
+
+/* Copy Button */
+.copy-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #6c757d;
+  font-size: 14px;
+  width: auto;
+}
+
+.copy-button:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.copy-button.copied {
+  background-color: #28a745;
+}
+
+.copy-button.copied:hover {
+  background-color: #28a745;
+}

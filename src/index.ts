@@ -236,6 +236,7 @@ app.use(
   "/api/*",
   cors({
     origin: (origin) => {
+      console.log("Origin:", origin);
       // Allow GitHub Pages and localhost
       if (!origin) return "*";
       if (origin.includes("github.io") || origin.includes("localhost")) {
@@ -244,6 +245,8 @@ app.use(
       return null;
     },
     credentials: true,
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
   }),
 );
 

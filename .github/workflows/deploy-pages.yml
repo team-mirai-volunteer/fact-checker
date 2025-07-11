@@ -1,0 +1,54 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'public/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Update API URL in config.js
+        run: |
+          # Check if FACT_CHECK_API_URL is set
+          if [ -z "${{ vars.FACT_CHECK_API_URL }}" ]; then
+            echo "Error: FACT_CHECK_API_URL is not set in repository variables"
+            echo "Please set FACT_CHECK_API_URL in Settings → Secrets and variables → Actions → Variables"
+            exit 1
+          fi
+          
+          # Replace API_URL with environment variable
+          API_URL="${{ vars.FACT_CHECK_API_URL }}"
+          sed -i "s|window.FACT_CHECK_API_URL = .*|window.FACT_CHECK_API_URL = '$API_URL';|g" public/config.js
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

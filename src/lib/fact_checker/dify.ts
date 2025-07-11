@@ -1,6 +1,10 @@
 import type { CheckResult, FactChcker } from "./types";
 
+let checker: FactChcker;
+
 export function createDifyFactChecker(): FactChcker {
+  if (checker) return checker;
+
   const endpoint =
     process.env.FACT_CHECKER_PROVIDER_ENDPOINT ??
     (() => {
@@ -13,7 +17,7 @@ export function createDifyFactChecker(): FactChcker {
       throw new Error("FACT_CHECKER_PROVIDER_TOKEN is not set");
     })();
 
-  return {
+  checker = {
     provider: "dify",
     factCheck: async (content: string): Promise<CheckResult> => {
       try {
@@ -57,4 +61,5 @@ export function createDifyFactChecker(): FactChcker {
       }
     },
   };
+  return checker;
 }

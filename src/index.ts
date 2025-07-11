@@ -1,9 +1,12 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { createFactChecker } from "./lib/fact_checker";
+import { createDifyFactChecker } from "./lib/fact_checker/dify";
 import { createSlackProvider } from "./lib/slack";
 import { extractTweetId } from "./lib/slack/utils";
 import { createTwitterProvider } from "./lib/twitter";
 import { buildSearchQuery } from "./lib/twitter_query/query_build";
+import { basicAuth } from "./middlewares/basic-auth";
 import { verifyApiKey } from "./middlewares/verify-api-key";
 import { verifyCron } from "./middlewares/verify-cron";
 
@@ -224,6 +227,49 @@ app.post("/api/fact-check-url", verifyApiKey, async (c) => {
       },
       500,
     );
+  }
+});
+
+/* ---------------- Public API for GitHub Pages ---------------- */
+// Enable CORS for GitHub Pages
+app.use(
+  "/api/*",
+  cors({
+    origin: (origin) => {
+      // Allow GitHub Pages and localhost
+      if (!origin) return "*";
+      if (origin.includes("github.io") || origin.includes("localhost")) {
+        return origin;
+      }
+      return null;
+    },
+    credentials: true,
+  }),
+);
+
+// Authentication endpoint
+app.post("/api/auth", basicAuth(), async (c) => {
+  // If the request reaches here, basic auth has succeeded
+  return c.json({
+    success: true,
+    message: "Authentication successful",
+  });
+});
+
+// Fact check by dify api
+app.post("/api/fact-check", basicAuth(), async (c) => {
+  try {
+    const { text }: { text: string } = await c.req.json();
+
+    // Use Dify fact checker if configured, otherwise use default
+    const factCheckerToUse = createDifyFactChecker();
+
+    const result = await factCheckerToUse.factCheck(text);
+
+    return c.json(result);
+  } catch (error) {
+    console.error("Error in fact-check API:", error);
+    return c.json({ error: "Internal server error" }, 500);
   }
 });
 

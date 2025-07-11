@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^30.0.0-beta.3",
-    "@biomejs/biome": "2.0.0",
+    "@biomejs/biome": "2.1.1",
     "@types/bun": "latest",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.21",

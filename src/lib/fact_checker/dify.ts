@@ -47,7 +47,7 @@ export function createDifyFactChecker(): FactChcker {
         const data: { answer: string } = await response.json();
 
         return {
-          ok: !/NG/i.test(data.answer),
+          ok: !/NG/.test(data.answer),
           answer: data.answer,
           citations: [],
         };

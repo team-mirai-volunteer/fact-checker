@@ -150,6 +150,10 @@ button:disabled {
 .result-answer {
   line-height: 1.6;
   white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow: hidden;
 }
 
 /* Loading Spinner */

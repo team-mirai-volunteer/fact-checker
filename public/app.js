@@ -1,5 +1,3 @@
-const { warn } = require("console");
-
 // Authentication variables
 let authToken = null;
 const authModal = document.getElementById("authModal");

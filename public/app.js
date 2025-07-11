@@ -15,8 +15,8 @@ const resultLabel = document.getElementById("resultLabel");
 const resultAnswer = document.getElementById("resultAnswer");
 
 // Get API URLs from environment or use default
-const AUTH_URL = `${window.FACT_CHECK_API_URL}/auth`;
-const FACT_CHECK_URL = `${window.FACT_CHECK_API_URL}/fact-check`;
+const AUTH_URL = `${window.FACT_CHECK_API_URL}/api/auth`;
+const FACT_CHECK_URL = `${window.FACT_CHECK_API_URL}/api/fact-check`;
 
 // Check authentication on page load
 window.addEventListener("load", async () => {

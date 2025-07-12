@@ -192,47 +192,6 @@ button:disabled {
   display: none;
 }
 
-/* Authentication Modal */
-.auth-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.auth-modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 40px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.auth-modal h2 {
-  color: #1a73e8;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.auth-modal .input-group {
-  margin-bottom: 15px;
-}
-
-.auth-modal button {
-  margin-top: 10px;
-}
-
-/* Main Content Visibility */
-.main-content {
-  display: none;
-}
 
 /* Copy Button */
 .copy-button {

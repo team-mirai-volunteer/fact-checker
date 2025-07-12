@@ -6,7 +6,6 @@ import { createSlackProvider } from "./lib/slack";
 import { extractTweetId } from "./lib/slack/utils";
 import { createTwitterProvider } from "./lib/twitter";
 import { buildSearchQuery } from "./lib/twitter_query/query_build";
-import { basicAuth } from "./middlewares/basic-auth";
 import { verifyApiKey } from "./middlewares/verify-api-key";
 import { verifyCron } from "./middlewares/verify-cron";
 
@@ -250,17 +249,8 @@ app.use(
   }),
 );
 
-// Authentication endpoint
-app.post("/api/auth", basicAuth(), async (c) => {
-  // If the request reaches here, basic auth has succeeded
-  return c.json({
-    success: true,
-    message: "Authentication successful",
-  });
-});
-
 // Fact check by dify api
-app.post("/api/fact-check", basicAuth(), async (c) => {
+app.post("/api/fact-check", async (c) => {
   try {
     const { text }: { text: string } = await c.req.json();
 

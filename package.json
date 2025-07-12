@@ -2,6 +2,7 @@
   "name": "x-fact-check",
   "type": "module",
   "scripts": {
+    "start": "node dist/server.js",
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "build:scripts": "npm run typecheck && vite build --config vite.scripts.config.ts",

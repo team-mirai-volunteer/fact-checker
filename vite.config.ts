@@ -1,5 +1,6 @@
 import build from "@hono/vite-build/node";
 import devServer from "@hono/vite-dev-server";
+import commonjs from "rollup-plugin-commonjs";
 import { defineConfig } from "vite";
 
 export default defineConfig(() => {
@@ -8,11 +9,12 @@ export default defineConfig(() => {
       port: 8080,
     },
     build: {
-      commonjsOptions: {
-        include: ["@slack/bolt", "@slack/web-api"],
-      },
       rollupOptions: {
-        external: ["@slack/bolt", "@slack/web-api"],
+        plugins: [
+          commonjs({
+            include: ["@slack/bolt", "@slack/web-api"],
+          }),
+        ],
       },
     },
     plugins: [

@@ -7,7 +7,10 @@
 Fact-Checkerは以下の機能を提供します：
 
 - **Twitter/X監視**: 特定の話題に関する投稿を自動的に検索・監視
-- **AI powered ファクトチェック**: OpenAIのGPTモデルとベクターストアを使用して、投稿内容の真偽を判定
+- **AI powered ファクトチェック**: 複数のプロバイダーをサポート
+  - OpenAIプロバイダー: GPTモデル（o3-mini）とベクターストアを使用
+  - Difyプロバイダー: Dify Workflowを使用したカスタムファクトチェック
+  - ローカルプロバイダー: テスト用のモックデータを返す（デフォルト）
 - **Slack通知**: 誤った情報が検出された場合、自動的にSlackに通知を送信
 - **CLI & Web API**: コマンドラインツールとしても、Webサービスとしても利用可能
 - **自動実行**: cronジョブやクラウドスケジューラーによる定期実行に対応
@@ -72,17 +75,30 @@ bun run upload
 VECTOR_STORE_ID="ここにコピーした ID を貼り付ける"
 ```
 
-## 4. ENV=prod を `.env` に追加する
-現時点で、ENVが`prod`もしくは`dev`の場合`openapi`を使う様になっています。
-それ以外は`src/lib/fact_checker/data/fact-check-result.json`のモックデータが出力されます。
+## 4. FACT_CHECKER_PROVIDER を設定する
+
+### FACT_CHECKER_PROVIDER設定
+- `FACT_CHECKER_PROVIDER=openai`: OpenAIプロバイダーを使用
+- `FACT_CHECKER_PROVIDER=dify`: Difyプロバイダーを使用
+- `FACT_CHECKER_PROVIDER=local` または未設定: ローカルプロバイダーを使用（デフォルト、モックデータを返す）
 
 ```bash
-ENV=prod
+# OpenAIプロバイダーを使用する場合
+FACT_CHECKER_PROVIDER=openai
+
+# Difyプロバイダーを使用する場合
+FACT_CHECKER_PROVIDER=dify
+FACT_CHECKER_PROVIDER_ENDPOINT="https://your-dify-endpoint/v1/workflows/run"
+FACT_CHECKER_PROVIDER_TOKEN="app-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# ローカルプロバイダー（デフォルト）を使用する場合
+# FACT_CHECKER_PROVIDERを設定しない、または
+FACT_CHECKER_PROVIDER=local
 ```
 
 ---
 
-## 4. ファクトチェックを実行する
+## 5. ファクトチェックを実行する
 
 ```bash
 bun run fact-check "ファクトチェックしたい文章"
@@ -97,9 +113,16 @@ bun run fact-check "ファクトチェックしたい文章"
 ## 1. 環境変数を設定する
 
 ```bash
-# --- OpenAI -------------------------------------------------
+# --- OpenAI (OpenAIプロバイダー使用時) -------------------------
 OPENAI_API_KEY="sk-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+VECTOR_STORE_ID=""
 
+# --- Fact Checker Provider設定 ---------------------------------
+FACT_CHECKER_PROVIDER="openai" # openai, dify, local から選択（デフォルト: local）
+
+# --- Dify (Difyプロバイダー使用時) ----------------------------
+FACT_CHECKER_PROVIDER_ENDPOINT="https://your-dify-endpoint/v1/workflows/run"
+FACT_CHECKER_PROVIDER_TOKEN="app-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 # --- X(Twitter) OAuth 1.0a User Context (書き込みが必要な場合) ----
 X_APP_KEY=""
@@ -113,10 +136,9 @@ SLACK_SIGNING_SECRET="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 SLACK_CHANNEL_ID="C01XXXXXXXXX" # 通知を送りたいチャンネル ID
 
 # -----------------------------------------------------------
-VECTOR_STORE_ID=""
 CRON_SECRET="" # cronの認証シークレット headerに設定する src/middlewares/verify-cron.tsを参照
 API_SECRET_KEY="" # API認証シークレット x-api-keyヘッダーに設定する
-ENV=prod
+ENV=prod # アプリケーション環境設定
 ```
 
 ## 2. デプロイする
@@ -132,6 +154,9 @@ gcloud run deploy x-fact-checker \
 --set-secrets="OPENAI_API_KEY=OPENAI_API_KEY:latest,\
 X_BEARER_TOKEN=X_BEARER_TOKEN:latest,\
 VECTOR_STORE_ID=VECTOR_STORE_ID:latest,\
+FACT_CHECKER_PROVIDER=FACT_CHECKER_PROVIDER:latest,\
+FACT_CHECKER_PROVIDER_ENDPOINT=FACT_CHECKER_PROVIDER_ENDPOINT:latest,\
+FACT_CHECKER_PROVIDER_TOKEN=FACT_CHECKER_PROVIDER_TOKEN:latest,\
 SLACK_BOT_TOKEN=SLACK_BOT_TOKEN:latest,\
 SLACK_SIGNING_SECRET=SLACK_SIGNING_SECRET:latest,\
 SLACK_CHANNEL_ID=SLACK_CHANNEL_ID:latest,\

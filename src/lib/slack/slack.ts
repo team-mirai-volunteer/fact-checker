@@ -61,14 +61,15 @@ export class SlackProvider implements BaseSlackProvider {
       const rawText = removeMentions(event.text);
       if (!rawText.trim()) return;
 
-      const check = await this.factChecker.factCheck(rawText);
-      const label = check.ok ? "✅ OK" : "❌ NG";
-
-      // スレッド (thread_ts) があればそこへ、無ければ新規メッセージ
-      await client.chat.postMessage({
-        channel: event.channel,
-        thread_ts: event.thread_ts ?? event.ts,
-        text: `${label} ${check.answer}`,
+      // 処理が5s以内に完了しないとslack側がeventを再送するため、awaitしない
+      this.factChecker.factCheck(rawText).then(async (check) => {
+        const label = check.ok ? "✅ OK" : "❌ NG";
+        // // スレッド (thread_ts) があればそこへ、無ければ新規メッセージ
+        await client.chat.postMessage({
+          channel: event.channel,
+          thread_ts: event.thread_ts ?? event.ts,
+          text: `${label} ${check.answer}`,
+        });
       });
     });
   }

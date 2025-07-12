@@ -10,12 +10,25 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: oven-sh/setup-bun@v1
+    - uses: actions/setup-node@v4
       with:
-        bun-version: latest
+        node-version: '20'
+        cache: 'npm'
 
     - name: Install dependencies
-      run: bun install
+      run: npm ci
+
+    - name: Run code quality checks
+      run: npm run biome:check:write
+
+    - name: Run type checking
+      run: npm run typecheck
 
     - name: Run tests
-      run: bun run test
+      run: npm run test
+
+    - name: Build application
+      run: npm run build
+
+    - name: Build scripts
+      run: npm run build:scripts

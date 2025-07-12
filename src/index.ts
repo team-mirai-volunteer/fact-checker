@@ -259,7 +259,10 @@ app.post("/api/fact-check", async (c) => {
 
     const result = await factCheckerToUse.factCheck(text);
 
-    return c.json(result);
+    return c.json({
+      answer: result.answer,
+      citations: result.citations,
+    });
   } catch (error) {
     console.error("Error in fact-check API:", error);
     return c.json({ error: "Internal server error" }, 500);

@@ -4,7 +4,6 @@ const submitBtn = document.getElementById("submitBtn");
 const loading = document.getElementById("loading");
 const error = document.getElementById("error");
 const result = document.getElementById("result");
-const resultLabel = document.getElementById("resultLabel");
 const resultAnswer = document.getElementById("resultAnswer");
 const copyButton = document.getElementById("copyButton");
 
@@ -43,9 +42,15 @@ form.addEventListener("submit", async (e) => {
     const data = await response.json();
 
     // Show result
-    result.className = `result ${data.ok ? "ok" : "ng"}`;
-    resultLabel.textContent = data.ok ? "✅ OK" : "❌ NG";
+    result.className = "result";
     resultAnswer.textContent = data.answer;
+    
+    // Show citations if available
+    if (data.citations && data.citations.length > 0) {
+      const citationsText = "\n\n参照:\n" + data.citations.join("\n");
+      resultAnswer.textContent += citationsText;
+    }
+    
     result.style.display = "block";
   } catch (err) {
     error.textContent = err.message;
@@ -58,9 +63,8 @@ form.addEventListener("submit", async (e) => {
 
 // Handle copy button click
 copyButton.addEventListener("click", async () => {
-  const label = resultLabel.textContent;
   const answer = resultAnswer.textContent;
-  const textToCopy = `${label}\n${answer}`;
+  const textToCopy = answer;
 
   try {
     await navigator.clipboard.writeText(textToCopy);

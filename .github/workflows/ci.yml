@@ -9,12 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-workspace
       - name: Run code quality checks
         run: npm run biome:check:write
 
@@ -23,12 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-workspace
       - name: Run type checking
         run: npm run typecheck
 
@@ -37,12 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-workspace
       - name: Run tests
         run: npm run test
 
@@ -52,12 +37,7 @@ jobs:
     needs: [lint, typecheck, test]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-workspace
       - name: Build application
         run: npm run build
       - name: Build scripts

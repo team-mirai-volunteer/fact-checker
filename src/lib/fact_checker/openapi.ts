@@ -24,7 +24,10 @@ export function createOpenAIFactChcker(): FactChcker {
     factCheck: async (content: string): Promise<CheckResult> => {
       const res = await openai.responses.create({
         model: "o3",
-        tools: [{ type: "file_search", vector_store_ids: [vectorStoreId] }],
+        tools: [
+          { type: "file_search", vector_store_ids: [vectorStoreId] },
+          { type: "web_search_preview" },
+        ],
         include: ["file_search_call.results"],
         input: [
           {
@@ -99,11 +102,19 @@ OK
       const citationBlocks: string[] = [];
 
       for (const item of res.output ?? []) {
-        if (item.type === "file_search_call" && item.results) {
-          for (const r of item.results) {
-            citationBlocks.push(
-              `- **${r.filename ?? r.file_id}**\n  > ${r.text?.trim()}`,
-            );
+        const itemType = item.type;
+        if (
+          (itemType === "file_search_call" || itemType === "web_search_call") &&
+          "results" in item
+        ) {
+          const results = item.results;
+
+          for (const r of results ?? []) {
+            if (itemType === "file_search_call") {
+              citationBlocks.push(
+                `- **${r.filename ?? r.file_id}**\n  > ${r.text?.trim()}`,
+              );
+            }
           }
         }
       }

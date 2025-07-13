@@ -5,7 +5,7 @@ async function main() {
 
   if (!statement) {
     console.error(
-      '❌ 文章を引数で渡してください。例:\n  bun run fact-check "地球は平らである"',
+      '❌ 文章を引数で渡してください。例:\n  npm run fact-check "地球は平らである"',
     );
     process.exit(1);
   }

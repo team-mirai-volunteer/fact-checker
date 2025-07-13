@@ -2,6 +2,7 @@
   "name": "x-fact-check",
   "type": "module",
   "scripts": {
+    "start": "node dist/server.js",
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "build:scripts": "npm run typecheck && vite build --config vite.scripts.config.ts",
@@ -36,6 +37,7 @@
     "dotenv": "^16.5.0",
     "fast-glob": "^3.3.3",
     "lefthook": "^1.11.13",
+    "rollup-plugin-commonjs": "10.1.0",
     "tsx": "^4.19.4",
     "typescript": "5.8.3",
     "vite": "7.0.2",

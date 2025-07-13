@@ -1,9 +1,10 @@
-import {
+import type {
   App,
-  type BlockAction,
-  type ButtonAction,
-  type ReceiverEvent,
+  BlockAction,
+  ButtonAction,
+  ReceiverEvent,
 } from "@slack/bolt";
+import slackBolt from "@slack/bolt";
 import { WebClient } from "@slack/web-api";
 import { createFactChecker } from "../fact_checker";
 import type { FactChcker } from "../fact_checker/types";
@@ -15,6 +16,8 @@ import type {
   SlackNotificationParams,
 } from "./types";
 import { removeMentions } from "./utils";
+
+const { App: SlackApp } = slackBolt;
 
 export class SlackProvider implements BaseSlackProvider {
   private app: App;
@@ -42,7 +45,7 @@ export class SlackProvider implements BaseSlackProvider {
       })();
 
     this.client = new WebClient(botToken);
-    this.app = new App({
+    this.app = new SlackApp({
       token: botToken,
       signingSecret: signingSecret,
     });

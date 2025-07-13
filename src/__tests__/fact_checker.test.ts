@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { createFactChecker } from "../lib/fact_checker";
 import { createOpenAIFactChcker } from "../lib/fact_checker/openapi";
 

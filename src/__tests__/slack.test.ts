@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "vitest";
 import { createSlackProvider } from "../lib/slack";
 import { LocalSlackProvider } from "../lib/slack/local";
 import { SlackProvider } from "../lib/slack/slack";

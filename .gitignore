@@ -11,3 +11,5 @@ dist/
 config/
 
 dist/
+
+.DS_Store

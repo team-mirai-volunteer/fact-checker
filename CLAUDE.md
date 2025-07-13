@@ -33,11 +33,13 @@ This is a Twitter/X fact-checking bot that monitors posts about "チームみら
 ### Core Components
 
 1. **Fact-Checking Engine** (`src/lib/fact_checker/`)
-   - Abstracted interface supporting multiple providers (OpenAI, local)
-   - Provider selection based on ENV variable:
-     - `ENV=prod` or `ENV=dev` → OpenAI provider
-     - Any other value → Local provider (for testing)
+   - Abstracted interface supporting multiple providers (OpenAI, Dify, local)
+   - Provider selection based on FACT_CHECKER_PROVIDER environment variable:
+     - `FACT_CHECKER_PROVIDER=openai` → OpenAI provider (uses GPT with vector store)
+     - `FACT_CHECKER_PROVIDER=dify` → Dify provider (uses Dify workflow)
+     - `FACT_CHECKER_PROVIDER=local` or unset → Local provider (returns mock data)
    - OpenAI: Uses o3-mini model with file search capabilities
+   - Dify: Calls external Dify workflow endpoint
    - Local: Returns mock data from JSON file
    - Strict rules: only checks claims about people, not events or achievements
    - Returns OK/NG status with explanations and citations

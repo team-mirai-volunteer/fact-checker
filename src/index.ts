@@ -1,5 +1,7 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { createFactChecker } from "./lib/fact_checker";
+import { createDifyFactChecker } from "./lib/fact_checker/dify";
 import { createSlackProvider } from "./lib/slack";
 import { extractTweetId } from "./lib/slack/utils";
 import { createTwitterProvider } from "./lib/twitter";
@@ -224,6 +226,46 @@ app.post("/api/fact-check-url", verifyApiKey, async (c) => {
       },
       500,
     );
+  }
+});
+
+/* ---------------- Public API for GitHub Pages ---------------- */
+// Enable CORS for GitHub Pages
+app.use(
+  "/api/*",
+  cors({
+    origin: (origin) => {
+      console.log("Origin:", origin);
+      // Allow GitHub Pages and localhost
+      if (!origin) return "*";
+      if (origin.includes("github.io") || origin.includes("localhost")) {
+        return origin;
+      }
+      return null;
+    },
+    credentials: true,
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
+// Fact check by dify api
+app.post("/api/fact-check", async (c) => {
+  try {
+    const { text }: { text: string } = await c.req.json();
+
+    // Use Dify fact checker if configured, otherwise use default
+    const factCheckerToUse = createDifyFactChecker();
+
+    const result = await factCheckerToUse.factCheck(text);
+
+    return c.json({
+      answer: result.answer,
+      citations: result.citations,
+    });
+  } catch (error) {
+    console.error("Error in fact-check API:", error);
+    return c.json({ error: "Internal server error" }, 500);
   }
 });
 

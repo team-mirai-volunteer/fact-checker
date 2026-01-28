@@ -111,8 +111,21 @@ app.get("/test/twitter", async (c) => {
 app.get("/cron/fetch", verifyCron, async (c) => {
   const query = buildSearchQuery();
 
-  // Twitter 検索
-  const res = await twitterProvider.searchTweets({ query, max_results: 30 });
+  // エンゲージメントフィルター（環境変数から取得）
+  const minLikes = process.env.MIN_LIKES_THRESHOLD
+    ? Number.parseInt(process.env.MIN_LIKES_THRESHOLD, 10)
+    : undefined;
+  const minRetweets = process.env.MIN_RETWEETS_THRESHOLD
+    ? Number.parseInt(process.env.MIN_RETWEETS_THRESHOLD, 10)
+    : undefined;
+
+  // Twitter 検索（エンゲージメントフィルター付き）
+  const res = await twitterProvider.searchTweets({
+    query,
+    max_results: 30,
+    min_likes: minLikes,
+    min_retweets: minRetweets,
+  });
 
   // ───────────────────────────────────────────
   // 並列でファクトチェック & NG 通知を実行

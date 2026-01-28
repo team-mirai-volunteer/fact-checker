@@ -45,16 +45,32 @@ export class TwitterProvider implements BaseTwitterProvider {
   async searchTweets(params: SearchTweetsParams): Promise<SearchTweetsResult> {
     const result = await this.client.v2.search(params.query, {
       max_results: params.max_results,
+      "tweet.fields": ["public_metrics"],
     });
 
-    return {
-      tweets: result.data?.data?.map((tweet) => ({
-        id: tweet.id,
-        text: tweet.text,
-        author_id: tweet.author_id,
-        created_at: tweet.created_at,
-      })),
-    };
+    let tweets = result.data?.data?.map((tweet) => ({
+      id: tweet.id,
+      text: tweet.text,
+      author_id: tweet.author_id,
+      created_at: tweet.created_at,
+      public_metrics: tweet.public_metrics,
+    }));
+
+    // クライアント側でエンゲージメント数によるフィルタリング
+    // X API v2ではmin_faves/min_retweetsオペレーターがサポートされていないため
+    if (tweets && params.min_likes !== undefined) {
+      tweets = tweets.filter(
+        (tweet) => (tweet.public_metrics?.like_count ?? 0) >= params.min_likes!
+      );
+    }
+    if (tweets && params.min_retweets !== undefined) {
+      tweets = tweets.filter(
+        (tweet) =>
+          (tweet.public_metrics?.retweet_count ?? 0) >= params.min_retweets!
+      );
+    }
+
+    return { tweets };
   }
 
   async postTweet(params: PostTweetParams): Promise<void> {

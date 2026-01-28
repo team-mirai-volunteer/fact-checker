@@ -58,6 +58,14 @@ export class TwitterProvider implements BaseTwitterProvider {
   }
 
   async postTweet(params: PostTweetParams): Promise<void> {
+    // 本番環境以外ではTwitter投稿をスキップ
+    if (process.env.ENV !== "prod") {
+      console.log("🚫 [Twitter] Skipping tweet in non-prod environment");
+      console.log("   ENV:", process.env.ENV);
+      console.log("   Text:", params.text);
+      return;
+    }
+
     await this.client.v2.tweet({
       text: params.text,
       quote_tweet_id: params.quote_tweet_id,

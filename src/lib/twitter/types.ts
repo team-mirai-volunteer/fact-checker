@@ -8,6 +8,7 @@ export interface Tweet {
 export interface SearchTweetsParams {
   query: string;
   max_results?: number;
+  start_time?: string;
 }
 
 export interface SearchTweetsResult {

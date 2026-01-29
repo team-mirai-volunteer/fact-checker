@@ -45,6 +45,7 @@ export class TwitterProvider implements BaseTwitterProvider {
   async searchTweets(params: SearchTweetsParams): Promise<SearchTweetsResult> {
     const result = await this.client.v2.search(params.query, {
       max_results: params.max_results,
+      ...(params.start_time && { start_time: params.start_time }),
     });
 
     return {

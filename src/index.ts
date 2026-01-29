@@ -111,8 +111,18 @@ app.get("/test/twitter", async (c) => {
 app.get("/cron/fetch", verifyCron, async (c) => {
   const query = buildSearchQuery();
 
+  // 実行サイクルに合わせた時刻フィルタ（重複取得を防止）
+  const intervalMinutes = Number(process.env.CRON_INTERVAL_MINUTES) || 60;
+  const startTime = new Date(
+    Date.now() - (intervalMinutes + 5) * 60 * 1000,
+  ).toISOString();
+
   // Twitter 検索
-  const res = await twitterProvider.searchTweets({ query, max_results: 30 });
+  const res = await twitterProvider.searchTweets({
+    query,
+    max_results: 30,
+    start_time: startTime,
+  });
 
   // ───────────────────────────────────────────
   // 並列でファクトチェック & NG 通知を実行

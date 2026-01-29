@@ -48,15 +48,23 @@ export class LocalTwitterProvider implements BaseTwitterProvider {
       },
     ];
 
-    const filteredTweets = allMockTweets.filter(
-      (tweet) =>
+    const filteredTweets = allMockTweets.filter((tweet) => {
+      if (
+        params.start_time &&
+        tweet.created_at &&
+        new Date(tweet.created_at) < new Date(params.start_time)
+      ) {
+        return false;
+      }
+      return (
         tweet.text.toLowerCase().includes(params.query.toLowerCase()) ||
         params.query
           .split(" ")
           .some((keyword) =>
             tweet.text.toLowerCase().includes(keyword.toLowerCase()),
-          ),
-    );
+          )
+      );
+    });
 
     const maxResults = params.max_results || 10;
     const limitedTweets = filteredTweets.slice(0, maxResults);

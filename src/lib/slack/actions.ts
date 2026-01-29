@@ -51,7 +51,7 @@ export function createActionHandlers(): ActionHandlers {
         logger.error("post tweet failed", e);
       }
 
-      /* 5. Slack メッセージを更新 */
+      /* 5. Slack メッセージ識別子を取得 */
       const channel = body.container?.channel_id;
       const ts = body.container?.message_ts;
       if (!channel || !ts) {
@@ -59,17 +59,56 @@ export function createActionHandlers(): ActionHandlers {
         return;
       }
 
-      /* 6. メッセージを更新 */
+      const userId = body.user?.id;
+      const tweetExcerpt = payload.originalTweet.slice(0, 200);
+      const tweetEllipsis = payload.originalTweet.length > 200 ? "..." : "";
+
+      /* 6. 元メッセージを「確認済み」に更新（ボタンを除去し、コンテキストは残す） */
       await client.chat.update({
         channel,
         ts,
-        text: "✅ 投稿が完了しました",
+        text: "✅ 確認済み",
+        blocks: [
+          {
+            type: "header",
+            text: { type: "plain_text", text: "✅ 確認済み" },
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `*ツイート:*\n> ${tweetExcerpt}${tweetEllipsis}`,
+            },
+            accessory: {
+              type: "button",
+              text: { type: "plain_text", text: "🔗 ツイートを表示" },
+              url: payload.originalTweetUrl,
+              action_id: "view_tweet",
+            },
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: payload.factCheckResult,
+            },
+          },
+        ],
+      });
+
+      /* 7. 同じスレッドに投稿完了を返信（#23） */
+      await client.chat.postMessage({
+        channel,
+        thread_ts: ts,
+        text: "✅ X への投稿が完了しました",
         blocks: [
           {
             type: "section",
             text: {
               type: "mrkdwn",
-              text: ":white_check_mark: X への投稿が完了しました。",
+              text: userId
+                ? `:white_check_mark: <@${userId}> が承認し、X への投稿が完了しました。`
+                : ":white_check_mark: X への投稿が完了しました。",
             },
           },
           {

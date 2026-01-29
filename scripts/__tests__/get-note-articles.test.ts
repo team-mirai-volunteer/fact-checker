@@ -5,6 +5,8 @@ import {
   parseArgs,
   pushToGithub,
   sanitizeFilename,
+  validateInput,
+  validateOutputDir,
   validateRepositoryName,
 } from "../get-note-articles.js";
 
@@ -35,6 +37,115 @@ const OctokitMock = mock(() => ({
   },
 }));
 mock.module("@octokit/rest", () => ({ Octokit: OctokitMock }));
+
+describe("validateInput のセキュリティテスト", () => {
+  test.each([
+    ["user; rm -rf /", "セミコロン"],
+    ["user && rm -rf /", "&&"],
+    ["user | cat /etc/passwd", "パイプ"],
+  ])("%s を拒否する（%s）", (input) => {
+    expect(() => validateInput(input)).toThrow("Invalid input");
+  });
+
+  test.each([
+    ["../../../etc/passwd", ".."],
+    ["path\\to\\file", "バックスラッシュ"],
+    ["/etc/passwd", "スラッシュ"],
+  ])("%s を拒否する（%s）", (input) => {
+    expect(() => validateInput(input)).toThrow("Invalid input");
+  });
+
+  test.each([
+    ["user\nname", "改行"],
+    ["user\rname", "復帰"],
+    ["user\tname", "タブ"],
+    ["user\0name", "NULL"],
+    ["user`cmd`", "バッククォート"],
+    ["user$(cmd)", "コマンド置換"],
+    ["user[0]", "ブラケット"],
+    ["user{a}", "ブレース"],
+  ])("%s を拒否する（%s）", (input) => {
+    expect(() => validateInput(input)).toThrow("Invalid input");
+  });
+
+  test.each(["validuser", "user123", "simple-name", "under_score"])(
+    "%s を許可する",
+    (input) => {
+      expect(() => validateInput(input)).not.toThrow();
+    },
+  );
+});
+
+describe("validateOutputDir のセキュリティテスト", () => {
+  test.each([
+    ["dir; rm -rf /", "セミコロン"],
+    ["dir && rm -rf /", "&&"],
+    ["dir | cat /etc/passwd", "パイプ"],
+  ])("%s を拒否する（%s）", (input) => {
+    expect(() => validateOutputDir(input)).toThrow("Invalid input");
+  });
+
+  test.each([
+    ["../../../etc", "パストラバーサル"],
+    ["path\\to\\dir", "バックスラッシュ"],
+  ])("%s を拒否する（%s）", (input) => {
+    expect(() => validateOutputDir(input)).toThrow("Invalid input");
+  });
+
+  test("スラッシュを許可する（output-dirではパス区切りとして有効）", () => {
+    expect(() => validateOutputDir("media/note")).not.toThrow();
+    expect(() => validateOutputDir("output/sub/dir")).not.toThrow();
+  });
+
+  test("validateInputではスラッシュが拒否されることを確認", () => {
+    expect(() => validateInput("media/note")).toThrow("Invalid input");
+  });
+});
+
+describe("CLI引数パース処理の正常系テスト", () => {
+  test("引数なしでデフォルト値を返す", () => {
+    const result = parseArgs([]);
+    expect(result.username).toBe("annotakahiro24");
+    expect(result.outputDir).toBe("media/note");
+    expect(result.githubRepo).toBeUndefined();
+  });
+
+  test("--username を指定できる", () => {
+    const result = parseArgs(["--username", "testuser"]);
+    expect(result.username).toBe("testuser");
+    expect(result.outputDir).toBe("media/note");
+  });
+
+  test("--output-dir を指定できる", () => {
+    const result = parseArgs(["--output-dir", "custom/output"]);
+    expect(result.outputDir).toBe("custom/output");
+  });
+
+  test("--github-repo を指定できる", () => {
+    const result = parseArgs(["--github-repo", "owner/repo"]);
+    expect(result.githubRepo).toBe("owner/repo");
+  });
+
+  test("複数の引数を同時に指定できる", () => {
+    const result = parseArgs([
+      "--username",
+      "myuser",
+      "--output-dir",
+      "out/dir",
+      "--github-repo",
+      "org/project",
+    ]);
+    expect(result.username).toBe("myuser");
+    expect(result.outputDir).toBe("out/dir");
+    expect(result.githubRepo).toBe("org/project");
+  });
+
+  test("不明な引数は無視される", () => {
+    const result = parseArgs(["--unknown", "value"]);
+    expect(result.username).toBe("annotakahiro24");
+    expect(result.outputDir).toBe("media/note");
+  });
+});
 
 describe("CLI引数パース処理のセキュリティテスト", () => {
   test("パストラバーサル攻撃のパターン", () => {
@@ -114,6 +225,21 @@ describe("リポジトリ名検証のセキュリティテスト", () => {
     for (const pattern of validPatterns) {
       expect(() => validateRepositoryName(pattern)).not.toThrow();
     }
+  });
+
+  test("戻り値にエンコード済みのowner/repoNameを含む", () => {
+    const result = validateRepositoryName("my-org/my-repo");
+    expect(result.owner).toBe("my-org");
+    expect(result.repoName).toBe("my-repo");
+  });
+
+  test.each([
+    ["", "空文字"],
+    ["/repo", "ownerなし"],
+    ["owner/", "repoなし"],
+    ["/", "スラッシュのみ"],
+  ])("%s を拒否する（%s）", (input) => {
+    expect(() => validateRepositoryName(input)).toThrow("Invalid input");
   });
 });
 

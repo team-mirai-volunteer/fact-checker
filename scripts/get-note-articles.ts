@@ -84,7 +84,7 @@ class NoteApiError extends Error {
 }
 
 // セキュリティチェック用の関数
-function validateInput(input: string): void {
+export function validateInput(input: string): void {
   // コマンドインジェクションのチェック
   if (input.includes(";") || input.includes("&&") || input.includes("|")) {
     throw new Error("Invalid input");
@@ -100,7 +100,7 @@ function validateInput(input: string): void {
 }
 
 // output-dir用のバリデーション関数
-function validateOutputDir(input: string): void {
+export function validateOutputDir(input: string): void {
   // コマンドインジェクションのチェック
   if (input.includes(";") || input.includes("&&") || input.includes("|")) {
     throw new Error("Invalid input");

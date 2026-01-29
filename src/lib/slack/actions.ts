@@ -41,6 +41,7 @@ export function createActionHandlers(): ActionHandlers {
       ].join("\n");
 
       /* 4. 引用 RT でポスト（URL でなく quote_tweet_id を使う） */
+      const isProduction = process.env.ENV === "prod";
       const quoteId = extractTweetId(payload.originalTweetUrl);
       try {
         await twitterProvider.postTweet({
@@ -59,27 +60,38 @@ export function createActionHandlers(): ActionHandlers {
         return;
       }
 
-      /* 6. メッセージを更新 */
+      /* 6. メッセージを更新（環境別分岐） */
+      const headerBlock = {
+        type: "section" as const,
+        text: {
+          type: "mrkdwn" as const,
+          text: isProduction
+            ? ":white_check_mark: X への投稿が完了しました。"
+            : ":clipboard: 投稿内容のプレビュー（開発環境のため実際の投稿はスキップされました）",
+        },
+      };
+      const contentBlock = {
+        type: "section" as const,
+        text: {
+          type: "mrkdwn" as const,
+          text: `*投稿内容:*\n\`\`\`\n${status}\n\`\`\``,
+        },
+      };
+      const quoteBlock = {
+        type: "section" as const,
+        text: {
+          type: "mrkdwn" as const,
+          text: `*引用元ツイート:*\n${payload.originalTweetUrl}`,
+        },
+      };
+
       await client.chat.update({
         channel,
         ts,
-        text: "✅ 投稿が完了しました",
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: ":white_check_mark: X への投稿が完了しました。",
-            },
-          },
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `*投稿内容:*\n\`\`\`\n${status}\n\`\`\``,
-            },
-          },
-        ],
+        text: isProduction ? "✅ 投稿が完了しました" : "📋 投稿プレビュー",
+        blocks: isProduction
+          ? [headerBlock, contentBlock]
+          : [headerBlock, contentBlock, quoteBlock],
       });
     },
   };

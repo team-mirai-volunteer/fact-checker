@@ -1,3 +1,10 @@
+# 【重要】このツールはメンテされていません。
+
+このツールの精神的後継の「投稿チェッカー」が開発中です。
+
+https://github.com/team-mirai-volunteer/post-checker
+
+
 # Fact-Checker
 
 このリポジトリは、Twitter/X上の投稿をリアルタイムで監視し、自動的にファクトチェックを行うシステムです。

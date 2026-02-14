@@ -70,11 +70,11 @@ body:
       required: true
       
   - type: input
-    id: bun-version
+    id: node-version
     attributes:
-      label: Bun バージョン
-      description: Bunのバージョンを入力してください
-      placeholder: 例：1.0.0
+      label: Node.js バージョン
+      description: Node.jsのバージョンを入力してください
+      placeholder: 例：24.0.0
     validations:
       required: true
       

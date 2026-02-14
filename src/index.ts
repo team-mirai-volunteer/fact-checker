@@ -269,11 +269,4 @@ app.post("/api/fact-check", async (c) => {
   }
 });
 
-/* 型互換のために一応 export も残しておく */
-
-export default {
-  fetch: app.fetch,
-  port: Number(process.env.PORT) || 8080,
-  hostname: "0.0.0.0",
-  idleTimeout: 120,
-};
+export default app;

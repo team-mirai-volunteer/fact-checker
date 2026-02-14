@@ -9,23 +9,24 @@ This is a Twitter/X fact-checking bot that monitors posts about "チームみら
 ## Key Commands
 
 ### Development
-- `bun run dev` - Start development server with hot reload
-- `bun run fact-check "text to check"` - Run fact-checking on provided text via CLI
-- `bun run upload` - Upload policy documents from `policy/` directory to OpenAI vector store
+- `npm run dev` - Start development server with hot reload
+- `npm run fact-check "text to check"` - Run fact-checking on provided text via CLI
+- `npm run upload` - Upload policy documents from `policy/` directory to OpenAI vector store
 
 ### Code Quality
-- `bun run biome:check:write` - Run Biome checks and auto-fix issues
-- `bun run format` - Format code with Biome
-- `bun run lint` - Lint code with Biome
+- `npm run biome:check:write` - Run Biome checks and auto-fix issues
+- `npm run format` - Format code with Biome
+- `npm run lint` - Lint code with Biome
 
 ### Testing
-- `bun test` - Run tests using Bun's built-in test runner
-- `bun test src/__tests__/specific.test.ts` - Run a single test file
+- `npm run test` - Run tests using Vitest
+- `npm run test:watch` - Run tests in watch mode for development
+- `src/__tests__/specific.test.ts` - Run a single test file
 
 ### Build
-- `bun run build` - Build main application (includes typecheck)
-- `bun run build:scripts` - Build scripts only (for CLI tools)
-- `bun run typecheck` - Run TypeScript type checking only
+- `npm run build` - Build main application (includes typecheck)
+- `npm run build:scripts` - Build scripts only (for CLI tools)
+- `npm run typecheck` - Run TypeScript type checking only
 
 ## Architecture Overview
 
@@ -74,7 +75,7 @@ All stored in `.env` file:
 
 #### OpenAI Provider (when ENV=prod/dev)
 - `OPENAI_API_KEY` - OpenAI API key
-- `VECTOR_STORE_ID` - OpenAI vector store ID (obtained after running `bun run upload`)
+- `VECTOR_STORE_ID` - OpenAI vector store ID (obtained after running `npm run upload`)
 
 #### Slack Provider (when ENV=prod/dev)
 - `SLACK_BOT_TOKEN` - Slack Bot User OAuth Token
@@ -102,10 +103,9 @@ The fact-checker has specific rules defined in `src/lib/fact-check.ts`:
 
 ### Testing Approach
 - Tests located in `src/__tests__/`
-- Use Bun's built-in test runner
+- Use Vitest
 - Focus on unit testing query builders and core logic
-- パターンを繰り返すようなテストはtest.eachを使ってテストを書くこと
-- When using `test.each` with Bun, use array format for proper variable interpolation:
+- When using `test.each` with Vitest, use array format for proper variable interpolation:
   ```typescript
   test.each([
     ["dev", "openai"],
@@ -129,12 +129,12 @@ The fact-checker has specific rules defined in `src/lib/fact-check.ts`:
 
 2. **Upload policy documents**:
    ```bash
-   bun run upload
+   npm run upload
    ```
 
 3. **Run the application**:
    ```bash
-   bun run dev
+   npm run dev
    ```
 
 ### Option 2: Local Mock Data (Testing Setup)
@@ -147,7 +147,7 @@ The fact-checker has specific rules defined in `src/lib/fact-check.ts`:
 
 2. **Run the application**:
    ```bash
-   bun run dev
+   npm run dev
    ```
 
 Note: Local provider returns mock data from `src/lib/fact_checker/data/fact-check-result.json`

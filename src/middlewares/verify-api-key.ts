@@ -1,7 +1,7 @@
 import type { Context, Next } from "hono";
 
 export const verifyApiKey = async (c: Context, next: Next) => {
-  const expected = Bun.env.API_SECRET_KEY;
+  const expected = process.env.API_SECRET_KEY;
 
   if (!expected) {
     await next();

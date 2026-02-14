@@ -7,9 +7,9 @@ on:
       - 'src/**'
       - 'scripts/**'
       - 'package.json'
-      - 'bun.lock'
+      - 'package-lock.json'
       - 'tsconfig.json'
-      - 'Dockerfile'
+      - 'docker/Dockerfile'
       - '.github/workflows/**'
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
     - name: Build + Deploy
       run: |
         IMAGE="$REGION-docker.pkg.dev/${{ secrets.PROJECT_ID }}/$SERVICE/app:latest"
-        gcloud builds submit --tag "$IMAGE" --quiet
+        gcloud builds submit --tag "$IMAGE" --file docker/Dockerfile --quiet
         gcloud run deploy "$SERVICE" \
           --image "$IMAGE" \
           --region "$REGION" \

@@ -8,6 +8,7 @@ import { createTwitterProvider } from "./lib/twitter";
 import { buildSearchQuery } from "./lib/twitter_query/query_build";
 import { verifyApiKey } from "./middlewares/verify-api-key";
 import { verifyCron } from "./middlewares/verify-cron";
+import { verifySlackSignature } from "./middlewares/verify-slack-signature";
 
 /* ------------------------------------------------------------------ */
 /*  Hono ルーティング定義                                             */
@@ -77,33 +78,35 @@ app.get("/test/slack", verifyCron, async (c) => {
 });
 
 // Twitter Provider テスト用エンドポイント
-// FYI localの動作確認用で一旦設置
-app.get("/test/twitter", async (c) => {
-  const query = c.req.query("q") || "";
-  const maxResults = Number(c.req.query("max_results")) || 10;
+// FYI localの動作確認用で一旦設置。本番 (ENV=prod) では登録しない
+if (process.env.ENV !== "prod") {
+  app.get("/test/twitter", async (c) => {
+    const query = c.req.query("q") || "";
+    const maxResults = Number(c.req.query("max_results")) || 10;
 
-  try {
-    const result = await twitterProvider.searchTweets({
-      query,
-      max_results: maxResults,
-    });
+    try {
+      const result = await twitterProvider.searchTweets({
+        query,
+        max_results: maxResults,
+      });
 
-    return c.json({
-      provider: process.env.ENV || "local",
-      query,
-      max_results: maxResults,
-      result,
-    });
-  } catch (error) {
-    return c.json(
-      {
-        error: error instanceof Error ? error.message : "Unknown error",
+      return c.json({
         provider: process.env.ENV || "local",
-      },
-      500,
-    );
-  }
-});
+        query,
+        max_results: maxResults,
+        result,
+      });
+    } catch (error) {
+      return c.json(
+        {
+          error: error instanceof Error ? error.message : "Unknown error",
+          provider: process.env.ENV || "local",
+        },
+        500,
+      );
+    }
+  });
+}
 
 /* ------------------------------------------------------------ */
 /* 1. cron 用エンドポイント (Vercel / Cloudflare Cron でも OK)  */
@@ -136,9 +139,10 @@ app.get("/cron/fetch", verifyCron, async (c) => {
 });
 
 /* ---------------- Slack Events 受信 ---------------- */
-app.post("/slack/events", async (c) => {
+app.post("/slack/events", verifySlackSignature, async (c) => {
   try {
-    const body = await c.req.json();
+    // 署名検証済みの生 body をパースする
+    const body = JSON.parse(await c.req.text());
 
     // URL Verification
     if (body.type === "url_verification") {
@@ -159,9 +163,9 @@ app.post("/slack/events", async (c) => {
   }
 });
 
-app.post("/slack/actions", async (c) => {
-  // ① URL-encoded フォームを取得
-  const form = await c.req.formData();
+app.post("/slack/actions", verifySlackSignature, async (c) => {
+  // ① 署名検証済みの生 body (URL-encoded フォーム) をパース
+  const form = new URLSearchParams(await c.req.text());
   const raw = form.get("payload");
 
   // payload が無ければ 400
